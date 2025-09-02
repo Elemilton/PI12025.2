@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Admin • Práticas Integradoras 1 2025.2</title>
 
-<!-- Bibliotecas para exportação -->
+<!-- Bibliotecas para exportação (versões estáveis) -->
+<!-- (Opcional) Adicione SRI/integrity depois, se quiser -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
 
 <style>
   :root { 
@@ -27,9 +29,7 @@
     --shadow: rgba(0, 0, 0, 0.3);
     --gradient: linear-gradient(135deg, var(--accent), #4c82ff);
   }
-  
   * { box-sizing: border-box; }
-  
   body {
     margin: 0;
     background: linear-gradient(120deg, #0a0d14, #0e1322 45%, #0a1230);
@@ -39,433 +39,103 @@
     font-size: 14px;
     line-height: 1.5;
   }
-  
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 24px;
-  }
-  
-  .header {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-  
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .header { text-align: center; margin-bottom: 32px; display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; }
   .header h1 {
     margin: 0 0 8px;
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 2rem; font-weight: 700;
     background: var(--gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
-  
-  .header p {
-    margin: 0;
-    color: var(--muted);
-    font-size: 1rem;
-  }
-  
+  .header p { margin: 0; color: var(--muted); font-size: 1rem; }
   .card {
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 24px;
+    padding: 24px; margin-bottom: 24px;
     box-shadow: 0 4px 20px var(--shadow);
     transition: all 0.3s ease;
   }
-  
-  .card:hover {
-    background: var(--card-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px var(--shadow);
-  }
-  
-  .grid {
-    display: grid;
-    gap: 20px;
-  }
-  
+  .card:hover { background: var(--card-hover); transform: translateY(-2px); box-shadow: 0 8px 30px var(--shadow); }
+  .grid { display: grid; gap: 20px; }
   .grid-2 { grid-template-columns: 1fr; }
   .grid-3 { grid-template-columns: 1fr; }
   .grid-4 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-  
   @media (min-width: 768px) {
     .grid-2 { grid-template-columns: 1fr 1fr; }
     .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
   }
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  label {
-    font-weight: 600;
-    color: var(--txt);
-    font-size: 0.9rem;
-  }
-  
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  label { font-weight: 600; color: var(--txt); font-size: 0.9rem; }
   input, select, button {
-    background: #0f1426;
-    border: 1px solid var(--line);
-    color: var(--txt);
-    padding: 14px 16px;
-    border-radius: 12px;
-    outline: none;
-    transition: all 0.3s ease;
-    font-size: 14px;
+    background: #0f1426; border: 1px solid var(--line); color: var(--txt);
+    padding: 14px 16px; border-radius: 12px; outline: none; transition: all 0.3s ease; font-size: 14px;
   }
-  
-  input:focus, select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.1);
-  }
-  
-  input::placeholder {
-    color: var(--muted);
-  }
-  
+  input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.1); }
+  input::placeholder { color: var(--muted); }
   .btn {
-    background: var(--gradient);
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    text-decoration: none;
-    min-width: 120px;
+    background: var(--gradient); border: none; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; min-width: 120px;
   }
-  
-  .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(124, 92, 255, 0.3);
-  }
-  
-  .btn:active {
-    transform: translateY(0);
-  }
-  
-  .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  .btn-secondary {
-    background: #1a2138;
-    border: 1px solid var(--line);
-  }
-  
-  .btn-secondary:hover {
-    background: #242b42;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
-  }
-  
-  .btn-pdf {
-    background: linear-gradient(135deg, #ff4757, #ff6b7a);
-  }
-  
-  .btn-excel {
-    background: linear-gradient(135deg, #2ed573, #2fd180);
-  }
-  
-  .btn-word {
-    background: linear-gradient(135deg, #3742fa, #4c82ff);
-  }
-  
-  .btn-csv {
-    background: linear-gradient(135deg, #ffa726, #ffb74d);
-  }
-  
-  .export-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 16px;
-  }
-  
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 32px;
-  }
-  
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124, 92, 255, 0.3); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: #1a2138; border: 1px solid var(--line); }
+  .btn-secondary:hover { background: #242b42; box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); }
+  .btn-pdf { background: linear-gradient(135deg, #ff4757, #ff6b7a); }
+  .btn-excel { background: linear-gradient(135deg, #2ed573, #2fd180); }
+  .btn-word { background: linear-gradient(135deg, #3742fa, #4c82ff); }
+  .btn-csv { background: linear-gradient(135deg, #ffa726, #ffb74d); }
+  .export-buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px; }
   .stat-card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; text-align: center; transition: all 0.3s ease;
+    position: relative; overflow: hidden;
   }
-  
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--gradient);
-  }
-  
-  .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px var(--shadow);
-  }
-  
-  .stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--txt);
-    margin: 8px 0;
-  }
-  
-  .stat-label {
-    color: var(--muted);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-    margin-top: 20px;
-  }
-  
-  .controls input {
-    flex: 1;
-    min-width: 200px;
-  }
-  
-  .table-container {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    overflow: hidden;
-    margin-top: 24px;
-  }
-  
-  .table-header {
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--line);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(124, 92, 255, 0.05);
-  }
-  
-  .table-title {
-    font-weight: 700;
-    font-size: 1.1rem;
-  }
-  
-  .table-count {
-    color: var(--muted);
-    font-size: 0.9rem;
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  
-  th, td {
-    padding: 16px 20px;
-    text-align: left;
-    border-bottom: 1px solid var(--line);
-  }
-  
-  th {
-    background: rgba(124, 92, 255, 0.05);
-    font-weight: 600;
-    color: var(--txt);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  tr:hover td {
-    background: rgba(124, 92, 255, 0.05);
-  }
-  
-  .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 20px;
-    color: var(--muted);
-  }
-  
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--line);
-    border-top: 3px solid var(--accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 16px;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--gradient); }
+  .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px var(--shadow); }
+  .stat-value { font-size: 2rem; font-weight: 700; color: var(--txt); margin: 8px 0; }
+  .stat-label { color: var(--muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 20px; }
+  .controls input { flex: 1; min-width: 200px; }
+  .table-container { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin-top: 24px; }
+  .table-header { padding: 20px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; background: rgba(124, 92, 255, 0.05); }
+  .table-title { font-weight: 700; font-size: 1.1rem; }
+  .table-count { color: var(--muted); font-size: 0.9rem; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { background: rgba(124, 92, 255, 0.05); font-weight: 600; color: var(--txt); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  tr:hover td { background: rgba(124, 92, 255, 0.05); }
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: var(--muted); }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--line); border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   .hide { display: none !important; }
-  
-  .message {
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    margin: 12px 0;
-  }
-  
-  .message.success {
-    background: rgba(47, 209, 128, 0.1);
-    border: 1px solid rgba(47, 209, 128, 0.3);
-    color: var(--success);
-  }
-  
-  .message.error {
-    background: rgba(255, 107, 122, 0.1);
-    border: 1px solid rgba(255, 107, 122, 0.3);
-    color: var(--error);
-  }
-  
-  .message.warning {
-    background: rgba(255, 167, 38, 0.1);
-    border: 1px solid rgba(255, 167, 38, 0.3);
-    color: var(--warning);
-  }
-  
-  .capacity-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 16px;
-    margin-top: 20px;
-  }
-  
-  .capacity-item {
-    background: #0f1426;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 16px;
-    transition: all 0.3s ease;
-  }
-  
-  .capacity-item:hover {
-    background: #141a2a;
-    transform: translateY(-2px);
-  }
-  
-  .capacity-name {
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--txt);
-  }
-  
-  .capacity-numbers {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  
-  .capacity-ratio {
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-  
-  .capacity-status {
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 6px;
-  }
-  
-  .capacity-status.available {
-    background: rgba(47, 209, 128, 0.2);
-    color: var(--success);
-  }
-  
-  .capacity-status.full {
-    background: rgba(255, 107, 122, 0.2);
-    color: var(--error);
-  }
-  
-  .progress-bar {
-    width: 100%;
-    height: 6px;
-    background: var(--line);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-top: 8px;
-  }
-  
-  .progress-fill {
-    height: 100%;
-    background: var(--gradient);
-    transition: width 0.3s ease;
-  }
-  
-  .small-text {
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-  
+  .message { padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; margin: 12px 0; }
+  .message.success { background: rgba(47, 209, 128, 0.1); border: 1px solid rgba(47, 209, 128, 0.3); color: var(--success); }
+  .message.error { background: rgba(255, 107, 122, 0.1); border: 1px solid rgba(255, 107, 122, 0.3); color: var(--error); }
+  .message.warning { background: rgba(255, 167, 38, 0.1); border: 1px solid rgba(255, 167, 38, 0.3); color: var(--warning); }
+  .capacity-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+  .capacity-item { background: #0f1426; border: 1px solid var(--line); border-radius: 12px; padding: 16px; transition: all 0.3s ease; }
+  .capacity-item:hover { background: #141a2a; transform: translateY(-2px); }
+  .capacity-name { font-weight: 600; margin-bottom: 8px; color: var(--txt); }
+  .capacity-numbers { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .capacity-ratio { font-size: 1.1rem; font-weight: 700; }
+  .capacity-status { font-size: 0.85rem; font-weight: 600; padding: 4px 8px; border-radius: 6px; }
+  .capacity-status.available { background: rgba(47, 209, 128, 0.2); color: var(--success); }
+  .capacity-status.full { background: rgba(255, 107, 122, 0.2); color: var(--error); }
+  .progress-bar { width: 100%; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; background: var(--gradient); transition: width 0.3s ease; }
+  .small-text { font-size: 0.8rem; color: var(--muted); }
   @media (max-width: 768px) {
-    .container {
-      padding: 16px;
-    }
-    
-    .header h1 {
-      font-size: 1.5rem;
-    }
-    
-    .card {
-      padding: 16px;
-    }
-    
-    .controls {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    
-    .controls input,
-    .controls button {
-      width: 100%;
-    }
-    
-    .export-buttons {
-      flex-direction: column;
-    }
-    
-    .export-buttons button {
-      width: 100%;
-    }
-    
-    table {
-      font-size: 0.85rem;
-    }
-    
-    th, td {
-      padding: 12px 8px;
-    }
+    .container { padding: 16px; }
+    .header h1 { font-size: 1.5rem; }
+    .card { padding: 16px; }
+    .controls { flex-direction: column; align-items: stretch; }
+    .controls input, .controls button { width: 100%; }
+    .export-buttons { flex-direction: column; }
+    .export-buttons button { width: 100%; }
+    table { font-size: 0.85rem; }
+    th, td { padding: 12px 8px; }
   }
 </style>
 </head>
@@ -482,26 +152,26 @@
     <div class="grid grid-2">
       <div class="form-group">
         <label for="api">URL da API</label>
-        <input id="api" value="https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec">
+        <input id="api" placeholder="https://script.google.com/macros/s/....../exec" />
         <small class="small-text">Mantenha essa URL (ou ajuste se reimplantar)</small>
       </div>
       <div class="form-group">
         <label for="pwd">Senha</label>
-        <input id="pwd" type="password" placeholder="••••••••">
-        <small class="small-text">Senha: <code>zecam2025</code></small>
+        <input id="pwd" type="password" placeholder="••••••••" />
       </div>
     </div>
     <div class="controls">
-      <button id="btEnter" class="btn">
-        <span>🔑</span>
-        Entrar
-      </button>
-      <span id="loginMsg" class="message hide"></span>
+      <button id="btEnter" class="btn"><span>🔑</span>Entrar</button>
+      <span id="loginMsg" class="message hide" role="status" aria-live="polite"></span>
     </div>
   </div>
 
   <!-- DASHBOARD -->
   <div id="dash" class="hide">
+    <div class="controls" style="justify-content: flex-end; margin-top:0; margin-bottom:12px;">
+      <button id="btLogout" class="btn btn-secondary">Sair</button>
+    </div>
+
     <!-- Estatísticas -->
     <div class="stats-grid">
       <div class="stat-card">
@@ -539,32 +209,17 @@
         </div>
       </div>
       <div class="controls">
-        <input id="fQ" placeholder="🔍 Buscar por nome...">
-        <button id="btFiltrar" class="btn">
-          <span>🔄</span>
-          Aplicar Filtros
-        </button>
-        <span id="fltMsg" class="message hide"></span>
+        <input id="fQ" placeholder="🔍 Buscar por nome..." />
+        <button id="btFiltrar" class="btn"><span>🔄</span>Aplicar Filtros</button>
+        <span id="fltMsg" class="message hide" role="status" aria-live="polite"></span>
       </div>
       
       <!-- Botões de Exportação -->
       <div class="export-buttons">
-        <button id="btPDF" class="btn btn-pdf">
-          <span>📄</span>
-          PDF
-        </button>
-        <button id="btXLSX" class="btn btn-excel">
-          <span>📊</span>
-          XLSX
-        </button>
-        <button id="btDOCX" class="btn btn-word">
-          <span>📝</span>
-          DOCX
-        </button>
-        <button id="btCSV" class="btn btn-csv">
-          <span>📋</span>
-          CSV
-        </button>
+        <button id="btPDF" class="btn btn-pdf"><span>📄</span>PDF</button>
+        <button id="btXLSX" class="btn btn-excel"><span>📊</span>XLSX</button>
+        <button id="btDOCX" class="btn btn-word"><span>📝</span>DOCX</button>
+        <button id="btCSV" class="btn btn-csv"><span>📋</span>CSV</button>
       </div>
     </div>
 
@@ -605,351 +260,293 @@
 </div>
 
 <script>
+/* Utilitários */
 const $ = s => document.querySelector(s);
 const apiEl = $('#api'), pwdEl = $('#pwd'), enterBtn = $('#btEnter'), loginCard = $('#loginCard'), loginMsg = $('#loginMsg'), dash = $('#dash');
 const fPratica = $('#fPratica'), fSerie = $('#fSerie'), fQ = $('#fQ'), btFiltrar = $('#btFiltrar');
 const btPDF = $('#btPDF'), btXLSX = $('#btXLSX'), btDOCX = $('#btDOCX'), btCSV = $('#btCSV');
 const totEl = $('#tot'), esgotEl = $('#esgot'), lastEl = $('#last'), loading = $('#loading'), tblWrap = $('#tblWrap'), tbody = $('#tbody'), count = $('#count'), capGrid = $('#capGrid');
+const btLogout = $('#btLogout');
 
 let TOKEN = '', API = '';
-let currentData = []; // Armazena os dados atuais para exportação
+let currentData = []; // dados atuais para exportação
+let listController, statsController; // AbortController para evitar respostas fora de ordem
 
-function setSession(a, t) { 
-  sessionStorage.setItem('pi_api', a); 
-  sessionStorage.setItem('pi_token', t); 
-}
-
-function restoreSession() { 
-  const a = sessionStorage.getItem('pi_api'), t = sessionStorage.getItem('pi_token'); 
-  if (a && t) { 
-    API = a; 
-    TOKEN = t; 
-    return true; 
-  } 
-  return false; 
+function setSession(a, t) { sessionStorage.setItem('pi_api', a); sessionStorage.setItem('pi_token', t); }
+function restoreSession() {
+  const a = sessionStorage.getItem('pi_api'), t = sessionStorage.getItem('pi_token');
+  if (a && t) { API = a; TOKEN = t; return true; }
+  return false;
 }
 
 function showMessage(element, text, type = 'error') {
   element.textContent = text;
   element.className = `message ${type}`;
   element.classList.remove('hide');
-  
-  if (type === 'success') {
-    setTimeout(() => {
-      element.classList.add('hide');
-    }, 3000);
-  }
+  if (type === 'success') setTimeout(() => element.classList.add('hide'), 3000);
 }
+function hideMessage(element) { element.classList.add('hide'); }
 
-function hideMessage(element) {
-  element.classList.add('hide');
-}
-
-async function authedGet(url, params = {}) {
+async function authedGet(url, params = {}, method = 'GET', bodyObj = null, extra = {}) {
   const u = new URL(url);
-  
-  Object.keys(params).forEach(key => {
-    if (params[key]) u.searchParams.append(key, params[key]);
-  });
-  
-  u.searchParams.append('key', TOKEN);
-  
-  console.log('Request URL:', u.toString());
-  
-  const res = await fetch(u.toString());
+  Object.keys(params).forEach(k => { if (params[k] != null && params[k] !== '') u.searchParams.append(k, params[k]); });
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${TOKEN}`
+    },
+    ...extra
+  };
+  if (method !== 'GET' && bodyObj) opts.body = JSON.stringify(bodyObj);
+
+  // Não logue URLs contendo dados sensíveis
+  const res = await fetch(u.toString(), opts);
   const text = await res.text();
   let json;
-  
-  try { 
-    json = JSON.parse(text);
-  } catch(e) { 
-    throw new Error('Resposta não-JSON: ' + text.substring(0, 100));
-  }
-  
-  if (!res.ok || json.ok === false) {
-    throw new Error(json.error || ('HTTP ' + res.status));
-  }
-  
+  try { json = JSON.parse(text); } catch(e) { throw new Error('Resposta não-JSON: ' + text.substring(0, 100)); }
+  if (!res.ok || json.ok === false) throw new Error(json.error || ('HTTP ' + res.status));
   return json;
 }
 
-function fmtDate(iso) { 
-  try {
-    return new Date(iso).toLocaleString('pt-BR');
-  } catch(_) {
-    return iso || '';
-  } 
-}
+function fmtDate(iso) { try { return new Date(iso).toLocaleString('pt-BR'); } catch(_) { return iso || ''; } }
 
+/* Renderizações seguras (sem innerHTML com dados externos) */
 function renderStats(s) {
   totEl.textContent = s.totalInscricoes || 0;
   lastEl.textContent = new Date().toLocaleString('pt-BR');
   const cap = s.capacidade || [];
   esgotEl.textContent = cap.filter(c => (+c.restantes || 0) === 0).length;
 
-  // Combo práticas
-  fPratica.innerHTML = '<option value="">Todas</option>';
-  cap.forEach(c => { 
-    const o = document.createElement('option'); 
-    o.value = c.pratica; 
-    o.textContent = `${c.pratica} (${c.restantes} restantes)`; 
-    fPratica.appendChild(o); 
+  // Combo de práticas
+  fPratica.innerHTML = '';
+  const optAll = document.createElement('option');
+  optAll.value = ''; optAll.textContent = 'Todas';
+  fPratica.appendChild(optAll);
+
+  cap.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.pratica;
+    o.textContent = `${c.pratica} (${(+c.restantes || 0)} restantes)`;
+    fPratica.appendChild(o);
   });
-  
+
   // Cards capacidade
   capGrid.innerHTML = '';
   cap.forEach(c => {
     const restantes = +c.restantes || 0;
     const inscritos = +c.inscritos || 0;
     const limite = +c.limite || 0;
-    const percentual = limite > 0 ? (inscritos / limite) * 100 : 0;
-    
-    const d = document.createElement('div'); 
-    d.className = 'capacity-item';
-    d.innerHTML = `
-      <div class="capacity-name">${c.pratica}</div>
-      <div class="capacity-numbers">
-        <span class="capacity-ratio">${inscritos}/${limite}</span>
-        <span class="capacity-status ${restantes > 0 ? 'available' : 'full'}">
-          ${restantes > 0 ? `${restantes} vagas` : 'ESGOTADO'}
-        </span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: ${Math.min(percentual, 100)}%"></div>
-      </div>
-    `;
-    capGrid.appendChild(d);
+    const percentual = limite > 0 ? Math.min((inscritos / limite) * 100, 100) : 0;
+
+    const item = document.createElement('div');
+    item.className = 'capacity-item';
+
+    const nm = document.createElement('div');
+    nm.className = 'capacity-name';
+    nm.textContent = c.pratica;
+
+    const nums = document.createElement('div');
+    nums.className = 'capacity-numbers';
+
+    const ratio = document.createElement('span');
+    ratio.className = 'capacity-ratio';
+    ratio.textContent = `${inscritos}/${limite}`;
+
+    const status = document.createElement('span');
+    status.className = 'capacity-status ' + (restantes > 0 ? 'available' : 'full');
+    status.textContent = restantes > 0 ? `${restantes} vagas` : 'ESGOTADO';
+
+    nums.appendChild(ratio); nums.appendChild(status);
+
+    const bar = document.createElement('div');
+    bar.className = 'progress-bar';
+    const fill = document.createElement('div');
+    fill.className = 'progress-fill';
+    fill.style.width = `${percentual}%`;
+    bar.appendChild(fill);
+
+    item.appendChild(nm);
+    item.appendChild(nums);
+    item.appendChild(bar);
+    capGrid.appendChild(item);
   });
+}
+
+function safeCell(text) {
+  const td = document.createElement('td');
+  td.textContent = text ?? '';
+  return td;
 }
 
 function renderRows(rows) {
-  currentData = rows; // Armazena os dados para exportação
-  tbody.innerHTML = ''; 
+  currentData = rows;
+  tbody.innerHTML = '';
+  const frag = document.createDocumentFragment();
+
   rows.forEach(r => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${fmtDate(r.ts)}</td>
-      <td><strong>${r.nome}</strong></td>
-      <td>${r.serie}</td>
-      <td>${r.pratica}</td>
-      <td><code>${r.id}</code></td>
-    `;
-    tbody.appendChild(tr);
+    tr.appendChild(safeCell(fmtDate(r.ts)));
+
+    const tdNome = document.createElement('td');
+    const strong = document.createElement('strong');
+    strong.textContent = r.nome ?? '';
+    tdNome.appendChild(strong);
+    tr.appendChild(tdNome);
+
+    tr.appendChild(safeCell(r.serie));
+    tr.appendChild(safeCell(r.pratica));
+
+    const tdId = document.createElement('td');
+    const code = document.createElement('code');
+    code.textContent = r.id ?? '';
+    tdId.appendChild(code);
+    tr.appendChild(tdId);
+
+    frag.appendChild(tr);
   });
+
+  tbody.appendChild(frag);
   count.textContent = `${rows.length} registro(s) encontrado(s)`;
 }
 
-async function loadStats() { 
-  return authedGet(API, {stats: '1'}); 
+/* Requisições com cancelamento */
+async function loadStats() {
+  if (statsController) statsController.abort();
+  statsController = new AbortController();
+  return authedGet(API, { stats: '1' }, 'GET', null, { signal: statsController.signal });
 }
 
 async function loadList() {
-  const params = {list: '1'};
+  if (listController) listController.abort();
+  listController = new AbortController();
+  const params = { list: '1' };
   const p = fPratica.value || '', s = fSerie.value || '', q = (fQ.value || '').trim();
   if (p) params.pratica = p;
   if (s) params.serie = s;
   if (q) params.q = q;
-  
-  return authedGet(API, params);
+  return authedGet(API, params, 'GET', null, { signal: listController.signal });
 }
 
-// Funções de exportação
+/* Exportações */
 function exportToPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  
-  // Título
+
   doc.setFontSize(16);
   doc.text('Práticas Integradoras 1 2025.2 - Inscrições', 14, 20);
-  
-  // Data de geração
   doc.setFontSize(10);
   doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30);
-  
-  // Preparar dados para a tabela
-  const headers = [['Data/Hora', 'Nome', 'Série/Turma', 'Prática', 'ID']];
-  const data = currentData.map(row => [
-    fmtDate(row.ts),
-    row.nome,
-    row.serie,
-    row.pratica,
-    row.id
-  ]);
-  
-  // Adicionar tabela
+
+  const headers = [['Data/Hora','Nome','Série/Turma','Prática','ID']];
+  const data = currentData.map(row => [ fmtDate(row.ts), row.nome, row.serie, row.pratica, row.id ]);
+
   doc.autoTable({
     head: headers,
     body: data,
     startY: 40,
-    styles: {
-      fontSize: 8,
-      cellPadding: 2
-    },
-    headStyles: {
-      fillColor: [124, 92, 255],
-      textColor: 255
-    },
-    alternateRowStyles: {
-      fillColor: [245, 245, 245]
-    }
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [124, 92, 255], textColor: 255 },
+    alternateRowStyles: { fillColor: [245, 245, 245] }
   });
-  
-  // Salvar
+
   const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.pdf`;
   doc.save(filename);
 }
 
 function exportToXLSX() {
-  // Preparar dados
   const data = [
-    ['Data/Hora', 'Nome', 'Série/Turma', 'Prática', 'ID'], // Cabeçalho
-    ...currentData.map(row => [
-      fmtDate(row.ts),
-      row.nome,
-      row.serie,
-      row.pratica,
-      row.id
-    ])
+    ['Data/Hora', 'Nome', 'Série/Turma', 'Prática', 'ID'],
+    ...currentData.map(row => [ fmtDate(row.ts), row.nome, row.serie, row.pratica, row.id ])
   ];
-  
-  // Criar workbook
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(data);
-  
-  // Definir largura das colunas
-  ws['!cols'] = [
-    { width: 20 }, // Data/Hora
-    { width: 30 }, // Nome
-    { width: 15 }, // Série/Turma
-    { width: 40 }, // Prática
-    { width: 15 }  // ID
-  ];
-  
-  // Adicionar worksheet ao workbook
+  ws['!cols'] = [{ width: 20 }, { width: 30 }, { width: 15 }, { width: 40 }, { width: 15 }];
   XLSX.utils.book_append_sheet(wb, ws, 'Inscrições');
-  
-  // Salvar
   const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.xlsx`;
   XLSX.writeFile(wb, filename);
 }
 
 function exportToDOCX() {
-  // Criar conteúdo HTML para o documento
-  let htmlContent = `
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Práticas Integradoras 1 2025.2 - Inscrições</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { color: #7c5cff; text-align: center; }
-          .info { text-align: center; margin-bottom: 30px; color: #666; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #7c5cff; color: white; }
-          tr:nth-child(even) { background-color: #f9f9f9; }
-        </style>
-      </head>
-      <body>
-        <h1>Práticas Integradoras 1 2025.2</h1>
-        <div class="info">
-          <p>Relatório de Inscrições</p>
-          <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
-          <p>Total de registros: ${currentData.length}</p>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>Nome</th>
-              <th>Série/Turma</th>
-              <th>Prática</th>
-              <th>ID</th>
-            </tr>
-          </thead>
-          <tbody>
-  `;
-  
-  currentData.forEach(row => {
-    htmlContent += `
-      <tr>
-        <td>${fmtDate(row.ts)}</td>
-        <td>${row.nome}</td>
-        <td>${row.serie}</td>
-        <td>${row.pratica}</td>
-        <td>${row.id}</td>
-      </tr>
-    `;
+  if (!currentData.length) return;
+
+  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType } = window.docx;
+
+  const headerCells = ['Data/Hora','Nome','Série/Turma','Prática','ID'].map(h =>
+    new TableCell({
+      children: [ new Paragraph({ children: [ new TextRun({ text: h, bold: true }) ] }) ],
+    })
+  );
+
+  const rows = [
+    new TableRow({ children: headerCells }),
+    ...currentData.map(r => new TableRow({
+      children: [ fmtDate(r.ts), r.nome, r.serie, r.pratica, r.id ].map(val =>
+        new TableCell({ children: [ new Paragraph(String(val ?? '')) ] })
+      )
+    }))
+  ];
+
+  const table = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows
   });
-  
-  htmlContent += `
-          </tbody>
-        </table>
-      </body>
-    </html>
-  `;
-  
-  // Criar blob e download
-  const blob = new Blob([htmlContent], {
-    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+
+  const doc = new Document({
+    sections: [{
+      children: [
+        new Paragraph({ children: [ new TextRun({ text: 'Práticas Integradoras 1 2025.2 - Inscrições', bold: true }) ] }),
+        new Paragraph({ text: `Gerado em: ${new Date().toLocaleString('pt-BR')}` }),
+        table
+      ]
+    }]
   });
-  
-  const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.doc`;
-  saveAs(blob, filename);
+
+  Packer.toBlob(doc).then(blob => {
+    const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.docx`;
+    saveAs(blob, filename);
+  });
 }
 
 function exportToCSV() {
-  const u = new URL(API);
-  u.searchParams.set('export', 'csv');
-  u.searchParams.set('key', TOKEN);
-  
-  fetch(u.toString())
-    .then(r => r.text())
-    .then(txt => {
-      const blob = new Blob([txt], {type: 'text/csv;charset=utf-8;'});
-      const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.csv`;
-      saveAs(blob, filename);
-      
-      showMessage($('#fltMsg'), 'CSV exportado com sucesso!', 'success');
-    })
-    .catch(() => {
-      showMessage($('#fltMsg'), 'Erro ao exportar CSV', 'error');
-    });
+  if (currentData.length === 0) {
+    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+    return;
+  }
+  const headers = ['Data/Hora','Nome','Série/Turma','Prática','ID'];
+  const rows = currentData.map(row => [ fmtDate(row.ts), row.nome, row.serie, row.pratica, row.id ]);
+  const csv = [headers, ...rows].map(arr => arr.map(v => {
+    const s = (v ?? '').toString().replace(/"/g, '""');
+    return /[",\n;]/.test(s) ? `"${s}"` : s;
+  }).join(';')).join('\n');
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.csv`;
+  saveAs(blob, filename);
+  showMessage($('#fltMsg'), 'CSV exportado com sucesso!', 'success');
 }
 
-// Event Listeners
+/* Eventos */
 enterBtn.addEventListener('click', async () => {
-  API = apiEl.value.trim(); 
-  TOKEN = pwdEl.value.trim();
-  
-  if (!API || !TOKEN) { 
-    showMessage(loginMsg, 'Informe a URL da API e a senha.', 'error');
-    return; 
-  }
-  
+  API = (apiEl.value || '').trim();
+  TOKEN = (pwdEl.value || '').trim();
+  if (!API || !TOKEN) { showMessage(loginMsg, 'Informe a URL da API e a senha.', 'error'); return; }
+
   enterBtn.disabled = true;
-  enterBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Validando...';
+  enterBtn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Validando...';
   showMessage(loginMsg, 'Validando credenciais...', 'warning');
-  
+
   try {
-    const stats = await loadStats(); 
+    const stats = await loadStats();
     setSession(API, TOKEN);
-    loginCard.classList.add('hide'); 
-    dash.classList.remove('hide'); 
+    loginCard.classList.add('hide'); dash.classList.remove('hide');
     renderStats(stats);
-    
-    loading.classList.remove('hide'); 
-    tblWrap.classList.add('hide');
-    
-    const lst = await loadList(); 
-    renderRows(lst.rows || []); 
-    loading.classList.add('hide'); 
-    tblWrap.classList.remove('hide'); 
-    hideMessage(loginMsg);
-    
+
+    loading.classList.remove('hide'); tblWrap.classList.add('hide');
+    const lst = await loadList();
+    renderRows(lst.rows || []);
+    loading.classList.add('hide'); tblWrap.classList.remove('hide'); hideMessage(loginMsg);
     showMessage(loginMsg, 'Login realizado com sucesso!', 'success');
-  } catch(err) { 
-    console.error('Erro:', err);
+  } catch(err) {
     showMessage(loginMsg, 'Falha no acesso: ' + err.message, 'error');
   } finally {
     enterBtn.disabled = false;
@@ -957,25 +554,20 @@ enterBtn.addEventListener('click', async () => {
   }
 });
 
-// Restaura sessão
-if (restoreSession()) { 
-  apiEl.value = API; 
-  pwdEl.value = TOKEN; 
-  enterBtn.click(); 
-}
+/* Restaura sessão */
+if (restoreSession()) { apiEl.value = API; pwdEl.value = TOKEN; enterBtn.click(); }
 
-// Filtros
+/* Filtros */
 btFiltrar.addEventListener('click', async () => {
   btFiltrar.disabled = true;
-  btFiltrar.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Atualizando...';
+  btFiltrar.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Atualizando...';
   showMessage($('#fltMsg'), 'Aplicando filtros...', 'warning');
-  
-  try { 
-    const [s, l] = await Promise.all([loadStats(), loadList()]); 
-    renderStats(s); 
-    renderRows(l.rows || []); 
+
+  try {
+    const [s, l] = await Promise.all([loadStats(), loadList()]);
+    renderStats(s); renderRows(l.rows || []);
     showMessage($('#fltMsg'), 'Filtros aplicados com sucesso!', 'success');
-  } catch(err) { 
+  } catch(err) {
     showMessage($('#fltMsg'), 'Erro: ' + err.message, 'error');
   } finally {
     btFiltrar.disabled = false;
@@ -983,97 +575,46 @@ btFiltrar.addEventListener('click', async () => {
   }
 });
 
-// Exportação
+/* Exportação */
 btPDF.addEventListener('click', () => {
-  if (currentData.length === 0) {
-    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
-    return;
-  }
-  
-  btPDF.disabled = true;
-  btPDF.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Gerando...';
-  
-  try {
-    exportToPDF();
-    showMessage($('#fltMsg'), 'PDF gerado com sucesso!', 'success');
-  } catch(err) {
-    showMessage($('#fltMsg'), 'Erro ao gerar PDF: ' + err.message, 'error');
-  } finally {
-    btPDF.disabled = false;
-    btPDF.innerHTML = '<span>📄</span>PDF';
-  }
+  if (!currentData.length) return showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+  btPDF.disabled = true; btPDF.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Gerando...';
+  try { exportToPDF(); showMessage($('#fltMsg'), 'PDF gerado com sucesso!', 'success'); }
+  catch(err){ showMessage($('#fltMsg'), 'Erro ao gerar PDF: ' + err.message, 'error'); }
+  finally { btPDF.disabled = false; btPDF.innerHTML = '<span>📄</span>PDF'; }
 });
-
 btXLSX.addEventListener('click', () => {
-  if (currentData.length === 0) {
-    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
-    return;
-  }
-  
-  btXLSX.disabled = true;
-  btXLSX.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Gerando...';
-  
-  try {
-    exportToXLSX();
-    showMessage($('#fltMsg'), 'XLSX gerado com sucesso!', 'success');
-  } catch(err) {
-    showMessage($('#fltMsg'), 'Erro ao gerar XLSX: ' + err.message, 'error');
-  } finally {
-    btXLSX.disabled = false;
-    btXLSX.innerHTML = '<span>📊</span>XLSX';
-  }
+  if (!currentData.length) return showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+  btXLSX.disabled = true; btXLSX.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Gerando...';
+  try { exportToXLSX(); showMessage($('#fltMsg'), 'XLSX gerado com sucesso!', 'success'); }
+  catch(err){ showMessage($('#fltMsg'), 'Erro ao gerar XLSX: ' + err.message, 'error'); }
+  finally { btXLSX.disabled = false; btXLSX.innerHTML = '<span>📊</span>XLSX'; }
 });
-
 btDOCX.addEventListener('click', () => {
-  if (currentData.length === 0) {
-    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
-    return;
-  }
-  
-  btDOCX.disabled = true;
-  btDOCX.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Gerando...';
-  
-  try {
-    exportToDOCX();
-    showMessage($('#fltMsg'), 'DOCX gerado com sucesso!', 'success');
-  } catch(err) {
-    showMessage($('#fltMsg'), 'Erro ao gerar DOCX: ' + err.message, 'error');
-  } finally {
-    btDOCX.disabled = false;
-    btDOCX.innerHTML = '<span>📝</span>DOCX';
-  }
+  if (!currentData.length) return showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+  btDOCX.disabled = true; btDOCX.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Gerando...';
+  try { exportToDOCX(); showMessage($('#fltMsg'), 'DOCX gerado com sucesso!', 'success'); }
+  catch(err){ showMessage($('#fltMsg'), 'Erro ao gerar DOCX: ' + err.message, 'error'); }
+  finally { btDOCX.disabled = false; btDOCX.innerHTML = '<span>📝</span>DOCX'; }
 });
-
 btCSV.addEventListener('click', () => {
-  if (currentData.length === 0) {
-    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
-    return;
-  }
-  
-  btCSV.disabled = true;
-  btCSV.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Exportando...';
-  
-  exportToCSV();
-  
-  setTimeout(() => {
-    btCSV.disabled = false;
-    btCSV.innerHTML = '<span>📋</span>CSV';
-  }, 1000);
+  if (!currentData.length) return showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+  btCSV.disabled = true; btCSV.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Exportando...';
+  try { exportToCSV(); }
+  finally { setTimeout(() => { btCSV.disabled = false; btCSV.innerHTML = '<span>📋</span>CSV'; }, 600); }
 });
 
-// Enter key support
-pwdEl.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    enterBtn.click();
-  }
-});
+/* Enter key support (keydown) */
+pwdEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterBtn.click(); });
+fQ.addEventListener('keydown', (e) => { if (e.key === 'Enter') btFiltrar.click(); });
 
-fQ.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    btFiltrar.click();
-  }
+/* Logout */
+btLogout?.addEventListener('click', () => {
+  sessionStorage.removeItem('pi_api'); sessionStorage.removeItem('pi_token');
+  TOKEN = ''; API = '';
+  dash.classList.add('hide'); loginCard.classList.remove('hide');
+  showMessage(loginMsg, 'Sessão encerrada.', 'success');
 });
 </script>
 </body>
 </html>
-
