@@ -36,7 +36,7 @@
   <div class="card">
     <header>
       <h1>Práticas Integradoras 1 2025.2</h1>
-      <p class="sub">Preencha para garantir sua vaga (cada prática tem <strong>20</strong> vagas).</p>
+      <p class="sub">Preencha para garantir sua vaga.</p>
     </header>
 
     <form id="form">
@@ -74,14 +74,14 @@
     </form>
 
     <div class="foot">
-      <span>GitHub Pages • Google Sheets</span>
+      <span>ECI MAria Zeca de Souza • 2025</span>
       <span id="lastSync">Sincronizando...</span>
     </div>
   </div>
 
   <script>
-    // URL da sua Web App (Apps Script)
-    const API_URL = "https://script.google.com/macros/s/AKfycbztzhB4EQtb4crB23288cXunQrSobTz5qOdqCOy_WUYDeRFfzwZ_7iKnHRdGjp_Qe0/exec";
+    // ✅ Nova URL da sua Web App:
+    const API_URL = "https://script.google.com/macros/s/AKfycbxmrQ24xs9uaMoprfxMOv0Di1_rs925zD5_1b5P5Qe6mSoRg-pJ8dE5r5PPfRou1V4-/exec";
 
     const $ = (sel) => document.querySelector(sel);
     const form = $("#form");
@@ -163,7 +163,6 @@
           body: JSON.stringify({ nome, serie, pratica })
         });
 
-        // Apps Script retorna 200/ok com JSON
         const json = await res.json();
 
         if (json.ok) {
@@ -189,7 +188,7 @@
       }
     });
 
-    // Carrega e atualiza periodicmente
+    // Carrega e atualiza periodicamente
     loadAvailability();
     setInterval(loadAvailability, 60000);
   </script>
