@@ -40,13 +40,13 @@
     <div class="grid g2">
       <div>
         <label>URL da API</label>
-        <input id="api" value="https://script.google.com/macros/s/AKfycbxmrQ24xs9uaMoprfxMOv0Di1_rs925zD5_1b5P5Qe6mSoRg-pJ8dE5r5PPfRou1V4-/exec">
+        <input id="api" value="https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec">
         <small class="mut">Mantenha essa URL (ou ajuste se reimplantar).</small>
       </div>
       <div>
         <label>Senha</label>
         <input id="pwd" type="password" placeholder="••••••••">
-        <small class="mut">Senha padrão: <code>zecam2025</code></small>
+        <small class="mut">Senha: <code>zecam2025</code></small>
       </div>
     </div>
     <div class="row" style="margin-top:12px">
@@ -155,7 +155,7 @@ function restoreSession(){
   return false;
 }
 
-// 🔑 Toda chamada ADMIN agora usa ?key=<senha> (query string)
+// Todas as chamadas ADMIN usam ?key=<senha>
 async function authedGet(url){
   const u = new URL(url);
   u.searchParams.set('key', TOKEN);
@@ -184,7 +184,7 @@ function renderStats(stats){
     fPratica.appendChild(opt);
   });
 
-  // Capacidade cards
+  // Cards de capacidade
   capGrid.innerHTML = '';
   (CAP || []).forEach(c=>{
     const div = document.createElement('div');
