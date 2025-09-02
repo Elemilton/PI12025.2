@@ -10,8 +10,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-<!-- Docx UMD (cria window.docx) -->
-<script src="https://cdn.jsdelivr.net/npm/docx@9.5.1/build/index.umd.js"></script>
 
 <style>
   :root { 
@@ -152,7 +150,6 @@
   <div id="loginCard" class="card">
     <h3 style="margin-top: 0;">Acesso Administrativo</h3>
 
-    <!-- Info da API resolvida -->
     <div class="muted" id="apiInfo">Detectando API...</div>
 
     <div id="apiEditor" class="grid grid-2 hide" style="margin-top:12px;">
@@ -226,6 +223,10 @@
       <div class="controls">
         <input id="fQ" placeholder="🔍 Buscar por nome..." />
         <button id="btFiltrar" class="btn"><span>🔄</span>Aplicar Filtros</button>
+
+        <!-- NOVO: botão de ordenação -->
+        <button id="btSort" class="btn btn-secondary" title="Alternar ordenação (Data/Hora ⇄ Nome)">Ordenar: Data/Hora</button>
+
         <span id="fltMsg" class="message hide" role="status" aria-live="polite"></span>
       </div>
       
@@ -233,7 +234,7 @@
       <div class="export-buttons">
         <button id="btPDF" class="btn btn-pdf"><span>📄</span>PDF</button>
         <button id="btXLSX" class="btn btn-excel"><span>📊</span>XLSX</button>
-        <button id="btDOCX" class="btn btn-word"><span>📝</span>DOCX</button>
+        <button id="btDOCX" class="btn btn-word"><span>📝</span>DOC</button>
         <button id="btCSV" class="btn btn-csv"><span>📋</span>CSV</button>
       </div>
     </div>
@@ -275,52 +276,41 @@
 </div>
 
 <script>
-/* ============ CONFIG E RESOLUÇÃO AUTOMÁTICA DA API ============ */
-const DEFAULT_API = "https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec"; // troque se reimplantar
+/* ============ CONFIG / API AUTODETECT ============ */
+const DEFAULT_API = "https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec";
 
 function getQueryParam(name) {
   const u = new URL(location.href);
   const v = u.searchParams.get(name);
   return v && v.trim() ? v.trim() : null;
 }
-
 async function resolveApi() {
-  // 1) ?api=
-  const qp = getQueryParam('api');
-  if (qp) return qp;
-
-  // 2) localStorage
-  const ls = localStorage.getItem('pi_api');
-  if (ls) return ls;
-
-  // 3) config.json (mesma origem) — opcional
+  const qp = getQueryParam('api'); if (qp) return qp;
+  const ls = localStorage.getItem('pi_api'); if (ls) return ls;
   try {
     const r = await fetch('config.json', { cache: 'no-store' });
-    if (r.ok) {
-      const cfg = await r.json();
-      if (cfg && cfg.api) return String(cfg.api);
-    }
+    if (r.ok) { const cfg = await r.json(); if (cfg && cfg.api) return String(cfg.api); }
   } catch(_) {}
-
-  // 4) fallback
   return DEFAULT_API;
 }
 
 /* ============ ELEMENTOS E VARS ============ */
 const $ = s => document.querySelector(s);
-
 const apiInfo = $('#apiInfo'), apiEditor = $('#apiEditor'), apiEl = $('#api');
 const toggleApiBtn = $('#toggleApi');
 
 const pwdEl = $('#pwd'), enterBtn = $('#btEnter'), loginCard = $('#loginCard'), loginMsg = $('#loginMsg'), dash = $('#dash');
 const fPratica = $('#fPratica'), fSerie = $('#fSerie'), fQ = $('#fQ'), btFiltrar = $('#btFiltrar');
 const btPDF = $('#btPDF'), btXLSX = $('#btXLSX'), btDOCX = $('#btDOCX'), btCSV = $('#btCSV');
+const btSort = $('#btSort');
 const totEl = $('#tot'), esgotEl = $('#esgot'), lastEl = $('#last'), loading = $('#loading'), tblWrap = $('#tblWrap'), tbody = $('#tbody'), count = $('#count'), capGrid = $('#capGrid');
 const btLogout = $('#btLogout');
 
 let TOKEN = '', API = '';
-let currentData = []; // exportações
-let listController, statsController; // AbortController
+let baseData = [];     // dados brutos do backend (sem ordenação)
+let currentData = [];  // dados exibidos/exportados (com ordenação aplicada)
+let sortMode = 'ts';   // 'ts' (padrão, Data/Hora desc) ou 'nome' (A→Z)
+let listController, statsController;
 
 /* ============ SESSÃO ============ */
 function setSession(a, t) { sessionStorage.setItem('pi_api', a); sessionStorage.setItem('pi_token', t); }
@@ -339,7 +329,7 @@ function showMessage(element, text, type = 'error') {
 }
 function hideMessage(element) { element.classList.add('hide'); }
 
-/* ============ FETCH AUTENTICADO (Apps Script: key na query) ============ */
+/* ============ FETCH (GAS: key na query) ============ */
 async function authedGet(url, params = {}, extra = {}) {
   const u = new URL(url);
   Object.keys(params).forEach(k => {
@@ -356,7 +346,22 @@ async function authedGet(url, params = {}, extra = {}) {
   return json;
 }
 
+/* ============ UTIL ============ */
 function fmtDate(iso) { try { return new Date(iso).toLocaleString('pt-BR'); } catch(_) { return iso || ''; } }
+
+function applySort(rows) {
+  const arr = [...rows];
+  if (sortMode === 'nome') {
+    arr.sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
+  } else {
+    arr.sort((a, b) => {
+      const da = a.ts ? new Date(a.ts).getTime() : 0;
+      const db = b.ts ? new Date(b.ts).getTime() : 0;
+      return db - da; // mais recentes primeiro
+    });
+  }
+  return arr;
+}
 
 /* ============ RENDER ============ */
 function renderStats(s) {
@@ -387,33 +392,21 @@ function renderStats(s) {
     const item = document.createElement('div');
     item.className = 'capacity-item';
 
-    const nm = document.createElement('div');
-    nm.className = 'capacity-name';
-    nm.textContent = c.pratica;
+    const nm = document.createElement('div'); nm.className = 'capacity-name'; nm.textContent = c.pratica;
+    const nums = document.createElement('div'); nums.className = 'capacity-numbers';
 
-    const nums = document.createElement('div');
-    nums.className = 'capacity-numbers';
-
-    const ratio = document.createElement('span');
-    ratio.className = 'capacity-ratio';
-    ratio.textContent = `${inscritos}/${limite}`;
-
+    const ratio = document.createElement('span'); ratio.className = 'capacity-ratio'; ratio.textContent = `${inscritos}/${limite}`;
     const status = document.createElement('span');
     status.className = 'capacity-status ' + (restantes > 0 ? 'available' : 'full');
     status.textContent = restantes > 0 ? `${restantes} vagas` : 'ESGOTADO';
 
     nums.appendChild(ratio); nums.appendChild(status);
 
-    const bar = document.createElement('div');
-    bar.className = 'progress-bar';
-    const fill = document.createElement('div');
-    fill.className = 'progress-fill';
-    fill.style.width = `${percentual}%`;
+    const bar = document.createElement('div'); bar.className = 'progress-bar';
+    const fill = document.createElement('div'); fill.className = 'progress-fill'; fill.style.width = `${percentual}%`;
     bar.appendChild(fill);
 
-    item.appendChild(nm);
-    item.appendChild(nums);
-    item.appendChild(bar);
+    item.appendChild(nm); item.appendChild(nums); item.appendChild(bar);
     capGrid.appendChild(item);
   });
 }
@@ -425,11 +418,13 @@ function safeCell(text) {
 }
 
 function renderRows(rows) {
-  currentData = rows;
+  baseData = rows || [];
+  currentData = applySort(baseData);
+
   tbody.innerHTML = '';
   const frag = document.createDocumentFragment();
 
-  rows.forEach(r => {
+  currentData.forEach(r => {
     const tr = document.createElement('tr');
     tr.appendChild(safeCell(fmtDate(r.ts)));
 
@@ -452,10 +447,10 @@ function renderRows(rows) {
   });
 
   tbody.appendChild(frag);
-  count.textContent = `${rows.length} registro(s) encontrado(s)`;
+  count.textContent = `${currentData.length} registro(s) encontrado(s)`;
 }
 
-/* ============ DATA LOAD (Abortable) ============ */
+/* ============ LOAD (Abortable) ============ */
 async function loadStats() {
   if (statsController) statsController.abort();
   statsController = new AbortController();
@@ -473,7 +468,7 @@ async function loadList() {
   return authedGet(API, params, { signal: listController.signal });
 }
 
-/* ============ EXPORTS ============ */
+/* ============ EXPORTS (respeita currentData) ============ */
 function exportToPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -511,57 +506,70 @@ function exportToXLSX() {
   XLSX.writeFile(wb, filename);
 }
 
+/* “DOC” compatível (HTML), sem DOCX real */
 function exportToDOCX() {
   if (!currentData.length) {
     showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
     return;
   }
-  if (!window.docx) {
-    showMessage($('#fltMsg'), 'A biblioteca DOCX não foi carregada. Verifique o script (index.umd.js).', 'error');
-    return;
-  }
-  const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType } = window.docx;
-  if (!Document || !Packer) {
-    showMessage($('#fltMsg'), 'DOCX indisponível (build incorreto). Use index.umd.js.', 'error');
-    return;
-  }
 
-  const headerCells = ['Data/Hora','Nome','Série/Turma','Prática','ID'].map(h =>
-    new TableCell({
-      children: [ new Paragraph({ children: [ new TextRun({ text: h, bold: true }) ] }) ],
-    })
-  );
+  let html = `
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Práticas Integradoras 1 2025.2 - Inscrições</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #7c5cff; text-align: center; }
+        .info { text-align: center; margin-bottom: 30px; color: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #7c5cff; color: #fff; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+      </style>
+    </head>
+    <body>
+      <h1>Práticas Integradoras 1 2025.2</h1>
+      <div class="info">
+        <p>Relatório de Inscrições</p>
+        <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+        <p>Total de registros: ${currentData.length}</p>
+        <p>Ordenação: ${sortMode === 'nome' ? 'Nome (A→Z)' : 'Data/Hora (mais recentes)'}</p>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Nome</th>
+            <th>Série/Turma</th>
+            <th>Prática</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
 
-  const rows = [
-    new TableRow({ children: headerCells }),
-    ...currentData.map(r => new TableRow({
-      children: [ fmtDate(r.ts), r.nome, r.serie, r.pratica, r.id ].map(val =>
-        new TableCell({ children: [ new Paragraph(String(val ?? '')) ] })
-      )
-    }))
-  ];
-
-  const table = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    rows
+  currentData.forEach(r => {
+    html += `
+      <tr>
+        <td>${fmtDate(r.ts)}</td>
+        <td>${r.nome || ''}</td>
+        <td>${r.serie || ''}</td>
+        <td>${r.pratica || ''}</td>
+        <td>${r.id || ''}</td>
+      </tr>`;
   });
 
-  const doc = new Document({
-    sections: [{
-      children: [
-        new Paragraph({ children: [ new TextRun({ text: 'Práticas Integradoras 1 2025.2 - Inscrições', bold: true }) ] }),
-        new Paragraph({ text: `Gerado em: ${new Date().toLocaleString('pt-BR')}` }),
-        table
-      ]
-    }]
-  });
+  html += `
+        </tbody>
+      </table>
+    </body>
+  </html>`;
 
-  Packer.toBlob(doc).then(blob => {
-    const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.docx`;
-    saveAs(blob, filename);
-  }).catch(err => {
-    showMessage($('#fltMsg'), 'Erro ao empacotar DOCX: ' + err.message, 'error');
-  });
+  const blob = new Blob([html], { type: 'application/msword' });
+  const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.doc`;
+  saveAs(blob, filename);
+  showMessage($('#fltMsg'), 'DOC gerado com sucesso!', 'success');
 }
 
 function exportToCSV() {
@@ -574,7 +582,7 @@ function exportToCSV() {
   const csv = [headers, ...rows].map(arr => arr.map(v => {
     const s = (v ?? '').toString().replace(/"/g, '""');
     return /[",\n;]/.test(s) ? `"${s}"` : s;
-    }).join(';')).join('\n');
+  }).join(';')).join('\n');
   const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
   const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.csv`;
   saveAs(blob, filename);
@@ -582,12 +590,22 @@ function exportToCSV() {
 }
 
 /* ============ EVENTOS ============ */
+document.addEventListener('DOMContentLoaded', async () => {
+  API = await resolveApi();
+  apiEl.value = API;
+  apiInfo.textContent = 'API detectada: ' + API;
+
+  if (restoreSession()) {
+    API = API || sessionStorage.getItem('pi_api');
+    enterBtn.click();
+  }
+});
+
 toggleApiBtn.addEventListener('click', () => {
   apiEditor.classList.toggle('hide');
 });
 
 enterBtn.addEventListener('click', async () => {
-  // Se o editor estiver aberto e tiver valor, respeita o que está no input
   if (!apiEditor.classList.contains('hide')) {
     API = (apiEl.value || '').trim() || API;
   }
@@ -601,7 +619,6 @@ enterBtn.addEventListener('click', async () => {
 
   try {
     const stats = await loadStats();
-    // persiste API escolhida
     setSession(API, TOKEN);
     localStorage.setItem('pi_api', API);
 
@@ -625,7 +642,6 @@ enterBtn.addEventListener('click', async () => {
   }
 });
 
-/* Filtros */
 btFiltrar.addEventListener('click', async () => {
   btFiltrar.disabled = true;
   btFiltrar.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Atualizando...';
@@ -643,7 +659,14 @@ btFiltrar.addEventListener('click', async () => {
   }
 });
 
-/* Exportação */
+/* Ordenação: alterna Data/Hora ⇄ Nome e re-renderiza (e impacta exportações) */
+btSort.addEventListener('click', () => {
+  sortMode = (sortMode === 'ts') ? 'nome' : 'ts';
+  btSort.textContent = sortMode === 'ts' ? 'Ordenar: Data/Hora' : 'Ordenar: Nome (A→Z)';
+  renderRows(baseData); // re-aplica ordenação escolhida
+});
+
+/* Exportação (respeita currentData) */
 btPDF.addEventListener('click', () => {
   if (!currentData.length) return showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
   btPDF.disabled = true; btPDF.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Gerando...';
@@ -662,8 +685,8 @@ btDOCX.addEventListener('click', () => {
   if (!currentData.length) return showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
   btDOCX.disabled = true; btDOCX.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Gerando...';
   try { exportToDOCX(); }
-  catch(err){ showMessage($('#fltMsg'), 'Erro ao gerar DOCX: ' + err.message, 'error'); }
-  finally { btDOCX.disabled = false; btDOCX.innerHTML = '<span>📝</span>DOCX'; }
+  catch(err){ showMessage($('#fltMsg'), 'Erro ao gerar DOC: ' + err.message, 'error'); }
+  finally { btDOCX.disabled = false; btDOCX.innerHTML = '<span>📝</span>DOC'; }
 });
 btCSV.addEventListener('click', () => {
   if (!currentData.length) return showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
@@ -679,23 +702,9 @@ fQ.addEventListener('keydown', (e) => { if (e.key === 'Enter') btFiltrar.click()
 /* Logout */
 btLogout?.addEventListener('click', () => {
   sessionStorage.removeItem('pi_api'); sessionStorage.removeItem('pi_token');
-  TOKEN = ''; 
-  dash.classList.add('hide'); loginCard.classList.remove('hide');
+  TOKEN = ''; dash.classList.add('hide'); loginCard.classList.remove('hide');
   showMessage(loginMsg, 'Sessão encerrada.', 'success');
   // mantém localStorage.pi_api para reuso futuro
-});
-
-/* Boot: resolve API, preenche UI e tenta restaurar sessão */
-document.addEventListener('DOMContentLoaded', async () => {
-  API = await resolveApi();
-  apiEl.value = API;
-  apiInfo.textContent = 'API detectada: ' + API;
-
-  if (restoreSession()) {
-    // Prioriza API detectada agora, não a da sessão antiga
-    API = API || sessionStorage.getItem('pi_api');
-    enterBtn.click(); // auto-login (só pede senha se não houver na sessão)
-  }
 });
 </script>
 </body>
