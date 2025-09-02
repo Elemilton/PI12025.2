@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Admin • Práticas Integradoras 1 2025.2</title>
 
-<!-- Bibliotecas para exportação (versões estáveis) -->
-<!-- (Opcional) Adicione SRI/integrity depois, se quiser -->
+<!-- Bibliotecas para exportação -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -40,7 +39,7 @@
     line-height: 1.5;
   }
   .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
-  .header { text-align: center; margin-bottom: 32px; display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  .header { text-align: center; margin-bottom: 32px; }
   .header h1 {
     margin: 0 0 8px;
     font-size: 2rem; font-weight: 700;
@@ -153,7 +152,7 @@
       <div class="form-group">
         <label for="api">URL da API</label>
         <input id="api" placeholder="https://script.google.com/macros/s/....../exec" />
-        <small class="small-text">Mantenha essa URL (ou ajuste se reimplantar)</small>
+        <small class="small-text">Cole aqui a URL do Web App do Google Apps Script</small>
       </div>
       <div class="form-group">
         <label for="pwd">Senha</label>
@@ -168,7 +167,7 @@
 
   <!-- DASHBOARD -->
   <div id="dash" class="hide">
-    <div class="controls" style="justify-content: flex-end; margin-top:0; margin-bottom:12px;">
+    <div class="controls" style="justify-content:flex-end; margin-top:0; margin-bottom:12px;">
       <button id="btLogout" class="btn btn-secondary">Sair</button>
     </div>
 
@@ -260,7 +259,7 @@
 </div>
 
 <script>
-/* Utilitários */
+/* ====== Atalhos e elementos ====== */
 const $ = s => document.querySelector(s);
 const apiEl = $('#api'), pwdEl = $('#pwd'), enterBtn = $('#btEnter'), loginCard = $('#loginCard'), loginMsg = $('#loginMsg'), dash = $('#dash');
 const fPratica = $('#fPratica'), fSerie = $('#fSerie'), fQ = $('#fQ'), btFiltrar = $('#btFiltrar');
@@ -269,9 +268,10 @@ const totEl = $('#tot'), esgotEl = $('#esgot'), lastEl = $('#last'), loading = $
 const btLogout = $('#btLogout');
 
 let TOKEN = '', API = '';
-let currentData = []; // dados atuais para exportação
-let listController, statsController; // AbortController para evitar respostas fora de ordem
+let currentData = []; // para exportações
+let listController, statsController; // AbortController
 
+/* ====== Sessão ====== */
 function setSession(a, t) { sessionStorage.setItem('pi_api', a); sessionStorage.setItem('pi_token', t); }
 function restoreSession() {
   const a = sessionStorage.getItem('pi_api'), t = sessionStorage.getItem('pi_token');
@@ -279,6 +279,7 @@ function restoreSession() {
   return false;
 }
 
+/* ====== Mensagens ====== */
 function showMessage(element, text, type = 'error') {
   element.textContent = text;
   element.className = `message ${type}`;
@@ -287,31 +288,27 @@ function showMessage(element, text, type = 'error') {
 }
 function hideMessage(element) { element.classList.add('hide'); }
 
-async function authedGet(url, params = {}, method = 'GET', bodyObj = null, extra = {}) {
+/* ====== Fetch autenticado compatível com seu GAS (key na query) ====== */
+async function authedGet(url, params = {}, extra = {}) {
   const u = new URL(url);
-  Object.keys(params).forEach(k => { if (params[k] != null && params[k] !== '') u.searchParams.append(k, params[k]); });
-  const opts = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${TOKEN}`
-    },
-    ...extra
-  };
-  if (method !== 'GET' && bodyObj) opts.body = JSON.stringify(bodyObj);
+  Object.keys(params).forEach(k => {
+    const v = params[k];
+    if (v != null && v !== '') u.searchParams.append(k, v);
+  });
+  // ✅ Apps Script original lê a senha como ?key=
+  u.searchParams.append('key', TOKEN);
 
-  // Não logue URLs contendo dados sensíveis
-  const res = await fetch(u.toString(), opts);
+  const res = await fetch(u.toString(), { signal: extra.signal });
   const text = await res.text();
   let json;
-  try { json = JSON.parse(text); } catch(e) { throw new Error('Resposta não-JSON: ' + text.substring(0, 100)); }
+  try { json = JSON.parse(text); } catch(e) { throw new Error('Resposta não-JSON: ' + text.substring(0, 120)); }
   if (!res.ok || json.ok === false) throw new Error(json.error || ('HTTP ' + res.status));
   return json;
 }
 
 function fmtDate(iso) { try { return new Date(iso).toLocaleString('pt-BR'); } catch(_) { return iso || ''; } }
 
-/* Renderizações seguras (sem innerHTML com dados externos) */
+/* ====== Renderizações seguras ====== */
 function renderStats(s) {
   totEl.textContent = s.totalInscricoes || 0;
   lastEl.textContent = new Date().toLocaleString('pt-BR');
@@ -331,7 +328,7 @@ function renderStats(s) {
     fPratica.appendChild(o);
   });
 
-  // Cards capacidade
+  // Cards de capacidade
   capGrid.innerHTML = '';
   cap.forEach(c => {
     const restantes = +c.restantes || 0;
@@ -410,11 +407,11 @@ function renderRows(rows) {
   count.textContent = `${rows.length} registro(s) encontrado(s)`;
 }
 
-/* Requisições com cancelamento */
+/* ====== Requisições (com cancelamento) ====== */
 async function loadStats() {
   if (statsController) statsController.abort();
   statsController = new AbortController();
-  return authedGet(API, { stats: '1' }, 'GET', null, { signal: statsController.signal });
+  return authedGet(API, { stats: '1' }, { signal: statsController.signal });
 }
 
 async function loadList() {
@@ -425,10 +422,10 @@ async function loadList() {
   if (p) params.pratica = p;
   if (s) params.serie = s;
   if (q) params.q = q;
-  return authedGet(API, params, 'GET', null, { signal: listController.signal });
+  return authedGet(API, params, { signal: listController.signal });
 }
 
-/* Exportações */
+/* ====== Exportações ====== */
 function exportToPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -509,7 +506,7 @@ function exportToDOCX() {
 }
 
 function exportToCSV() {
-  if (currentData.length === 0) {
+  if (!currentData.length) {
     showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
     return;
   }
@@ -525,7 +522,7 @@ function exportToCSV() {
   showMessage($('#fltMsg'), 'CSV exportado com sucesso!', 'success');
 }
 
-/* Eventos */
+/* ====== Eventos ====== */
 enterBtn.addEventListener('click', async () => {
   API = (apiEl.value || '').trim();
   TOKEN = (pwdEl.value || '').trim();
@@ -604,7 +601,7 @@ btCSV.addEventListener('click', () => {
   finally { setTimeout(() => { btCSV.disabled = false; btCSV.innerHTML = '<span>📋</span>CSV'; }, 600); }
 });
 
-/* Enter key support (keydown) */
+/* Enter key (keydown) */
 pwdEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterBtn.click(); });
 fQ.addEventListener('keydown', (e) => { if (e.key === 'Enter') btFiltrar.click(); });
 
