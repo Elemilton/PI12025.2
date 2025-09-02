@@ -7,29 +7,25 @@
   <style>
     :root { --bg:#0e0f13; --card:#151823; --txt:#e9ecf1; --muted:#9aa3b2; --acc:#7c5cff; --ok:#2fd180; --err:#ff5c7a; }
     * { box-sizing:border-box; }
-    body { margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif; background:linear-gradient(120deg,#0e0f13,#12131a 40%, #101628); color:var(--txt); min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial,sans-serif; background:linear-gradient(120deg,#0e0f13,#12131a 40%, #101628); color:var(--txt); min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:24px; }
     .card { width:100%; max-width:720px; background:var(--card); border:1px solid rgba(255,255,255,.06); border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,.35); overflow:hidden; }
     header { padding:28px 28px 16px; border-bottom:1px solid rgba(255,255,255,.06); }
-    h1 { margin:0 0 6px; font-size:1.4rem; letter-spacing:.2px; }
+    h1 { margin:0 0 6px; font-size:1.4rem; }
     p.sub { margin:0; color:var(--muted); font-size:.95rem; }
     form { padding:24px 28px 28px; display:grid; gap:18px; }
     label { display:block; font-weight:600; margin:0 0 8px; }
     .field { display:grid; gap:8px; }
-    input, select, button { width:100%; padding:14px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:#0f1220; color:var(--txt); outline:none; }
+    input, select, button { width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:#0f1220; color:var(--txt); }
     input::placeholder { color:#7d8597; }
-    select:disabled, option[disabled] { color:#888; }
     .hint { font-size:.85rem; color:var(--muted); }
-    .row { display:grid; gap:16px; grid-template-columns:1fr; }
-    @media (min-width:720px){ .row { grid-template-columns:1fr 1fr; } }
+    .row { display:grid; gap:16px; grid-template-columns:1fr; } @media (min-width:720px){ .row{grid-template-columns:1fr 1fr;} }
     .pill { display:inline-flex; gap:8px; align-items:center; font-size:.85rem; padding:8px 12px; border-radius:999px; background:#0f1220; border:1px solid rgba(255,255,255,.08); color:var(--muted); }
     .status { padding:12px 16px; border-radius:12px; background:#0f1a1f; border:1px solid rgba(255,255,255,.08); font-size:.95rem; display:none; }
     .status.ok { display:block; border-color:rgba(47,209,128,.5); }
     .status.err { display:block; border-color:rgba(255,92,122,.5); }
     .foot { padding:16px 28px 24px; display:flex; justify-content:space-between; align-items:center; color:var(--muted); border-top:1px solid rgba(255,255,255,.06); font-size:.9rem; flex-wrap:wrap; gap:12px; }
-    button { background:linear-gradient(135deg, var(--acc), #4c82ff); border:none; font-weight:700; cursor:pointer; transition:transform .08s ease, filter .2s ease; }
-    button:disabled { opacity:.6; cursor:not-allowed; filter:grayscale(20%); }
-    .caps { display:flex; flex-wrap:wrap; gap:8px; }
-    .caps .pill { background:#0f152b; }
+    button { background:linear-gradient(135deg, var(--acc), #4c82ff); border:none; font-weight:700; cursor:pointer; }
+    .caps { display:flex; flex-wrap:wrap; gap:8px; } .caps .pill { background:#0f152b; }
   </style>
 </head>
 <body>
@@ -62,14 +58,12 @@
           <select id="pratica" name="pratica" required>
             <option value="" disabled selected>Carregando opções...</option>
           </select>
-          <div class="hint" id="hint-pratica">As opções esgotadas ficam indisponíveis.</div>
+          <div class="hint">Opções esgotadas ficam indisponíveis.</div>
         </div>
       </div>
 
       <div class="caps" id="chips"></div>
-
       <div id="status" class="status"></div>
-
       <button id="btn" type="submit">Enviar inscrição</button>
     </form>
 
@@ -81,113 +75,40 @@
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec";
+    const $ = (s)=>document.querySelector(s);
+    const form=$("#form"), selPra=$("#pratica"), chips=$("#chips"), box=$("#status"), btn=$("#btn"), last=$("#lastSync");
 
-    const $ = (sel) => document.querySelector(sel);
-    const form = $("#form");
-    const selectPratica = $("#pratica");
-    const chips = $("#chips");
-    const statusBox = $("#status");
-    const btn = $("#btn");
-    const lastSync = $("#lastSync");
-
-    async function loadAvailability() {
-      try {
-        btn.disabled = true;
-        statusBox.className = "status";
-        statusBox.style.display = "none";
-
-        const res = await fetch(API_URL);
-        const json = await res.json();
-
-        const items = (json && json.availability) ? json.availability : [];
-        renderOptions(items);
-        renderChips(items);
-        lastSync.textContent = "Atualizado agora";
-      } catch (e) {
-        statusBox.textContent = "Não foi possível carregar a disponibilidade. Verifique a API.";
-        statusBox.className = "status err";
-      } finally {
-        btn.disabled = false;
-      }
+    async function loadAvailability(){
+      try{
+        btn.disabled=true; box.style.display="none";
+        const res=await fetch(API_URL); const json=await res.json();
+        const items=(json&&json.availability)||[]; renderOptions(items); renderChips(items); last.textContent="Atualizado agora";
+      }catch(e){
+        box.textContent="Não foi possível carregar a disponibilidade."; box.className="status err"; box.style.display="block";
+      }finally{ btn.disabled=false; }
     }
-
-    function renderOptions(items) {
-      selectPratica.innerHTML = '<option value="" disabled selected>Selecione</option>';
-      items.forEach(it => {
-        const remaining = Number(it.restantes) || 0;
-        const opt = document.createElement("option");
-        opt.value = it.pratica;
-        opt.textContent = `${it.pratica} ${remaining > 0 ? `(${remaining} vagas)` : `(ESGOTADO)`}`;
-        if (remaining <= 0) opt.disabled = true;
-        selectPratica.appendChild(opt);
-      });
+    function renderOptions(items){
+      selPra.innerHTML='<option value="" disabled selected>Selecione</option>';
+      items.forEach(it=>{ const rem=+it.restantes||0; const o=document.createElement("option"); o.value=it.pratica; o.textContent=`${it.pratica} ${rem>0?`(${rem} vagas)`:'(ESGOTADO)'}`; if(rem<=0)o.disabled=true; selPra.appendChild(o); });
     }
-
-    function renderChips(items) {
-      chips.innerHTML = "";
-      items.forEach(it=>{
-        const pill = document.createElement("span");
-        pill.className = "pill";
-        const rem = Number(it.restantes)||0;
-        pill.textContent = `${it.pratica}: ${rem} ${rem===1?'vaga':'vagas'}`;
-        chips.appendChild(pill);
-      });
+    function renderChips(items){
+      chips.innerHTML=""; items.forEach(it=>{ const s=document.createElement("span"); s.className="pill"; const r=+it.restantes||0; s.textContent=`${it.pratica}: ${r} ${r===1?'vaga':'vagas'}`; chips.appendChild(s); });
     }
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      statusBox.className = "status";
-      statusBox.style.display = "none";
-
-      const nome = $("#nome").value.trim();
-      const serie = $("#serie").value;
-      const pratica = $("#pratica").value;
-
-      if (!nome || !serie || !pratica) {
-        statusBox.textContent = "Preencha todos os campos.";
-        statusBox.className = "status err";
-        statusBox.style.display = "block";
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = "Enviando...";
-
-      try {
-        // text/plain evita preflight CORS
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ nome, serie, pratica })
-        });
-
-        const json = await res.json();
-
-        if (json.ok) {
-          statusBox.textContent = "Inscrição registrada com sucesso! ✅";
-          statusBox.className = "status ok";
-          form.reset();
-          await loadAvailability();
-        } else if (json.full) {
-          statusBox.textContent = "Essa prática esgotou enquanto você enviava. Escolha outra opção.";
-          statusBox.className = "status err";
-          await loadAvailability();
-        } else {
-          statusBox.textContent = "Erro: " + (json.error || "não foi possível concluir a inscrição.");
-          statusBox.className = "status err";
-        }
-      } catch (err) {
-        statusBox.textContent = "Falha na conexão. Verifique a URL/implantação da API.";
-        statusBox.className = "status err";
-      } finally {
-        statusBox.style.display = "block";
-        btn.disabled = false;
-        btn.textContent = "Enviar inscrição";
-      }
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault(); box.style.display="none";
+      const nome=$("#nome").value.trim(), serie=$("#serie").value, pratica=selPra.value;
+      if(!nome||!serie||!pratica){ box.textContent="Preencha todos os campos."; box.className="status err"; box.style.display="block"; return; }
+      btn.disabled=true; btn.textContent="Enviando...";
+      try{
+        const res=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({nome,serie,pratica})});
+        const json=await res.json();
+        if(json.ok){ box.textContent="Inscrição registrada com sucesso! ✅"; box.className="status ok"; form.reset(); await loadAvailability();}
+        else if(json.full){ box.textContent="Essa prática esgotou. Escolha outra."; box.className="status err"; await loadAvailability();}
+        else { box.textContent="Erro: "+(json.error||"não foi possível concluir."); box.className="status err"; }
+      }catch(err){ box.textContent="Falha na conexão."; box.className="status err"; }
+      finally{ box.style.display="block"; btn.disabled=false; btn.textContent="Enviar inscrição"; }
     });
-
-    loadAvailability();
-    setInterval(loadAvailability, 60000);
+    loadAvailability(); setInterval(loadAvailability,60000);
   </script>
 </body>
 </html>
