@@ -26,6 +26,8 @@
   .center{display:flex;justify-content:center;align-items:center;min-height:40vh}
   .hide{display:none}
   .err{color:var(--err)} .ok{color:var(--ok)}
+  .spinner {width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: var(--acc); animation: spin 1s ease-in-out infinite; display: inline-block; margin-right: 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -38,7 +40,7 @@
     <div class="grid g2">
       <div>
         <label>URL da API</label>
-        <input id="api" value="https://script.google.com/macros/s/AKfycbxYaCI3GY-4inAXcXPJdGritrJKH7xq1Z4vUs9-rPA4QS2szhNr0wa8OlLN1LqwQkKR/exec">
+        <input id="api" value="https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec">
         <small class="mut">Mantenha essa URL (ou ajuste se reimplantar).</small>
       </div>
       <div>
@@ -125,19 +127,19 @@ let TOKEN='', API='';
 function setSession(a,t){ sessionStorage.setItem('pi_api',a); sessionStorage.setItem('pi_token',t); }
 function restoreSession(){ const a=sessionStorage.getItem('pi_api'), t=sessionStorage.getItem('pi_token'); if(a&&t){API=a;TOKEN=t; return true;} return false; }
 
-// Todas as chamadas ADMIN usam a senha no corpo da requisição
+// Função para fazer requisições autenticadas
 async function authedGet(url, params = {}) {
   const u = new URL(url);
   
   // Adiciona parâmetros à URL
   Object.keys(params).forEach(key => {
-    if (params[key]) u.searchParams.append(key, params[key]);
+    if (params[key] !== undefined && params[key] !== '') {
+      u.searchParams.append(key, params[key]);
+    }
   });
   
   // Adiciona a chave como parâmetro de consulta
   u.searchParams.append('key', TOKEN);
-  
-  console.log('Request URL:', u.toString());
   
   const res = await fetch(u.toString());
   const text = await res.text();
@@ -165,17 +167,26 @@ function renderStats(s){
 
   // Combo práticas
   fPratica.innerHTML='<option value="">Todas</option>';
-  cap.forEach(c=>{ const o=document.createElement('option'); o.value=c.pratica; o.textContent=`${c.pratica} (${c.restantes} restantes)`; fPratica.appendChild(o); });
+  cap.forEach(c=>{ 
+    const o=document.createElement('option'); 
+    o.value=c.pratica; 
+    o.textContent=`${c.pratica} (${c.restantes} restantes)`;
+    fPratica.appendChild(o); 
+  });
+  
   // Cards capacidade
   capGrid.innerHTML='';
   cap.forEach(c=>{
-    const d=document.createElement('div'); d.className='stat';
+    const d=document.createElement('div'); 
+    d.className='stat';
     d.innerHTML=`<div class="mut">${c.pratica}</div><b>${c.inscritos}/${c.limite}</b><div class="${(+c.restantes>0)?'ok':'err'}">${(+c.restantes>0)?(c.restantes+' vagas'):'ESGOTADO'}</div>`;
     capGrid.appendChild(d);
   });
 }
+
 function renderRows(rows){
-  tbody.innerHTML=''; rows.forEach(r=>{
+  tbody.innerHTML=''; 
+  rows.forEach(r=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`<td>${fmtDate(r.ts)}</td><td>${r.nome}</td><td>${r.serie}</td><td>${r.pratica}</td><td>${r.id}</td>`;
     tbody.appendChild(tr);
@@ -206,7 +217,7 @@ enterBtn.addEventListener('click', async ()=>{
     return; 
   }
   
-  loginMsg.textContent='Validando…';
+  loginMsg.innerHTML = '<span class="spinner"></span>Validando…';
   
   try{
     const stats = await loadStats(); 
