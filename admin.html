@@ -5,72 +5,492 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin • Práticas Integradoras 1 2025.2</title>
 <style>
-  :root { --bg:#0b0e16; --card:#141a2a; --txt:#e9ecf1; --mut:#9aa3b2; --acc:#7c5cff; --ok:#2fd180; --err:#ff6b7a; --line:#1f2740;}
-  *{box-sizing:border-box}
-  body{margin:0;background:linear-gradient(120deg,#0b0e16,#0e1322 45%,#0a1230);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial,sans-serif;min-height:100dvh}
-  .wrap{max-width:1100px;margin:0 auto;padding:24px}
-  h1{margin:0 0 8px;font-size:1.4rem}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
-  .grid{display:grid;gap:16px}
-  .g2{grid-template-columns:1fr} .g3{grid-template-columns:1fr}
-  @media(min-width:900px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}}
-  input,select,button{background:#0f1426;border:1px solid var(--line);color:var(--txt);padding:12px;border-radius:10px;outline:none}
-  button{background:linear-gradient(135deg,var(--acc),#4c82ff);border:none;font-weight:700;cursor:pointer}
-  .mut{color:var(--mut);font-size:.9rem}
-  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-  .stat{padding:12px;border:1px solid var(--line);border-radius:12px;background:#0f1323}
-  .stat b{font-size:1.2rem}
-  table{width:100%;border-collapse:collapse}
-  th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;font-size:.95rem}
-  tr:hover td{background:#0e152d}
-  .center{display:flex;justify-content:center;align-items:center;min-height:40vh}
-  .hide{display:none}
-  .err{color:var(--err)} .ok{color:var(--ok)}
-  .spinner {width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: var(--acc); animation: spin 1s ease-in-out infinite; display: inline-block; margin-right: 10px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  :root { 
+    --bg: #0a0d14; 
+    --card: #141a2a; 
+    --card-hover: #1a2138;
+    --txt: #e9ecf1; 
+    --muted: #9aa3b2; 
+    --accent: #7c5cff; 
+    --accent-hover: #8b6bff;
+    --success: #2fd180; 
+    --error: #ff6b7a; 
+    --warning: #ffa726;
+    --line: #1f2740;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --gradient: linear-gradient(135deg, var(--accent), #4c82ff);
+  }
+  
+  * { box-sizing: border-box; }
+  
+  body {
+    margin: 0;
+    background: linear-gradient(120deg, #0a0d14, #0e1322 45%, #0a1230);
+    color: var(--txt);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Ubuntu, Cantarell, Arial, sans-serif;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  
+  .header h1 {
+    margin: 0 0 8px;
+    font-size: 2rem;
+    font-weight: 700;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 1rem;
+  }
+  
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px var(--shadow);
+    transition: all 0.3s ease;
+  }
+  
+  .card:hover {
+    background: var(--card-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px var(--shadow);
+  }
+  
+  .grid {
+    display: grid;
+    gap: 20px;
+  }
+  
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  
+  @media (min-width: 768px) {
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  label {
+    font-weight: 600;
+    color: var(--txt);
+    font-size: 0.9rem;
+  }
+  
+  input, select, button {
+    background: #0f1426;
+    border: 1px solid var(--line);
+    color: var(--txt);
+    padding: 14px 16px;
+    border-radius: 12px;
+    outline: none;
+    transition: all 0.3s ease;
+    font-size: 14px;
+  }
+  
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.1);
+  }
+  
+  input::placeholder {
+    color: var(--muted);
+  }
+  
+  .btn {
+    background: var(--gradient);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+  
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(124, 92, 255, 0.3);
+  }
+  
+  .btn:active {
+    transform: translateY(0);
+  }
+  
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .btn-secondary {
+    background: #1a2138;
+    border: 1px solid var(--line);
+  }
+  
+  .btn-secondary:hover {
+    background: #242b42;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient);
+  }
+  
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px var(--shadow);
+  }
+  
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--txt);
+    margin: 8px 0;
+  }
+  
+  .stat-label {
+    color: var(--muted);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    margin-top: 20px;
+  }
+  
+  .controls input {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .table-container {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 24px;
+  }
+  
+  .table-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(124, 92, 255, 0.05);
+  }
+  
+  .table-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  
+  .table-count {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  th, td {
+    padding: 16px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  
+  th {
+    background: rgba(124, 92, 255, 0.05);
+    font-weight: 600;
+    color: var(--txt);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  tr:hover td {
+    background: rgba(124, 92, 255, 0.05);
+  }
+  
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--line);
+    border-top: 3px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .hide { display: none !important; }
+  
+  .message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin: 12px 0;
+  }
+  
+  .message.success {
+    background: rgba(47, 209, 128, 0.1);
+    border: 1px solid rgba(47, 209, 128, 0.3);
+    color: var(--success);
+  }
+  
+  .message.error {
+    background: rgba(255, 107, 122, 0.1);
+    border: 1px solid rgba(255, 107, 122, 0.3);
+    color: var(--error);
+  }
+  
+  .message.warning {
+    background: rgba(255, 167, 38, 0.1);
+    border: 1px solid rgba(255, 167, 38, 0.3);
+    color: var(--warning);
+  }
+  
+  .capacity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+  }
+  
+  .capacity-item {
+    background: #0f1426;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .capacity-item:hover {
+    background: #141a2a;
+    transform: translateY(-2px);
+  }
+  
+  .capacity-name {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--txt);
+  }
+  
+  .capacity-numbers {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .capacity-ratio {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  
+  .capacity-status {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  
+  .capacity-status.available {
+    background: rgba(47, 209, 128, 0.2);
+    color: var(--success);
+  }
+  
+  .capacity-status.full {
+    background: rgba(255, 107, 122, 0.2);
+    color: var(--error);
+  }
+  
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  
+  .progress-fill {
+    height: 100%;
+    background: var(--gradient);
+    transition: width 0.3s ease;
+  }
+  
+  .small-text {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  
+  @media (max-width: 768px) {
+    .container {
+      padding: 16px;
+    }
+    
+    .header h1 {
+      font-size: 1.5rem;
+    }
+    
+    .card {
+      padding: 16px;
+    }
+    
+    .controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .controls input,
+    .controls button {
+      width: 100%;
+    }
+    
+    table {
+      font-size: 0.85rem;
+    }
+    
+    th, td {
+      padding: 12px 8px;
+    }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Admin • Práticas Integradoras 1 2025.2</h1>
-  <p class="mut">Acesse com a senha para visualizar estatísticas, filtrar e exportar inscrições.</p>
+<div class="container">
+  <div class="header">
+    <h1>Admin • Práticas Integradoras 1 2025.2</h1>
+    <p>Painel administrativo para visualizar estatísticas, filtrar e exportar inscrições</p>
+  </div>
 
   <!-- LOGIN -->
   <div id="loginCard" class="card">
-    <div class="grid g2">
-      <div>
-        <label>URL da API</label>
+    <h3 style="margin-top: 0;">Acesso Administrativo</h3>
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label for="api">URL da API</label>
         <input id="api" value="https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec">
-        <small class="mut">Mantenha essa URL (ou ajuste se reimplantar).</small>
+        <small class="small-text">Mantenha essa URL (ou ajuste se reimplantar)</small>
       </div>
-      <div>
-        <label>Senha</label>
+      <div class="form-group">
+        <label for="pwd">Senha</label>
         <input id="pwd" type="password" placeholder="••••••••">
-        <small class="mut">Senha: <code>zecam2025</code></small>
+        <small class="small-text">Senha: <code>zecam2025</code></small>
       </div>
     </div>
-    <div class="row" style="margin-top:12px">
-      <button id="btEnter">Entrar</button>
-      <span id="loginMsg" class="mut"></span>
+    <div class="controls">
+      <button id="btEnter" class="btn">
+        <span>🔑</span>
+        Entrar
+      </button>
+      <span id="loginMsg" class="message hide"></span>
     </div>
   </div>
 
   <!-- DASHBOARD -->
   <div id="dash" class="hide">
-    <div class="grid g3" style="margin:16px 0">
-      <div class="stat"><div class="mut">Total de inscrições</div><b id="tot"></b></div>
-      <div class="stat"><div class="mut">Práticas esgotadas</div><b id="esgot"></b></div>
-      <div class="stat"><div class="mut">Última atualização</div><b id="last"></b></div>
+    <!-- Estatísticas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total de Inscrições</div>
+        <div class="stat-value" id="tot">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Práticas Esgotadas</div>
+        <div class="stat-value" id="esgot">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Última Atualização</div>
+        <div class="stat-value" id="last" style="font-size: 1rem;">-</div>
+      </div>
     </div>
 
+    <!-- Filtros -->
     <div class="card">
-      <div class="grid g2">
-        <div>
-          <label>Prática</label>
-          <select id="fPratica"><option value="">Todas</option></select>
+      <h3 style="margin-top: 0;">Filtros e Busca</h3>
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label for="fPratica">Prática</label>
+          <select id="fPratica">
+            <option value="">Todas</option>
+          </select>
         </div>
-        <div>
-          <label>Série/Turma</label>
+        <div class="form-group">
+          <label for="fSerie">Série/Turma</label>
           <select id="fSerie">
             <option value="">Todas</option>
             <option>1° A</option><option>1° B</option><option>1° C</option><option>1° D</option><option>1° E</option>
@@ -79,20 +499,32 @@
           </select>
         </div>
       </div>
-      <div class="row" style="margin-top:12px">
-        <input id="fQ" placeholder="Buscar por nome...">
-        <button id="btFiltrar">Aplicar filtros</button>
-        <button id="btCSV">Exportar CSV</button>
-        <span id="fltMsg" class="mut"></span>
+      <div class="controls">
+        <input id="fQ" placeholder="🔍 Buscar por nome...">
+        <button id="btFiltrar" class="btn">
+          <span>🔄</span>
+          Aplicar Filtros
+        </button>
+        <button id="btCSV" class="btn btn-secondary">
+          <span>📊</span>
+          Exportar CSV
+        </button>
+        <span id="fltMsg" class="message hide"></span>
       </div>
     </div>
 
-    <div class="card" style="margin-top:16px">
-      <div class="row" style="justify-content:space-between">
-        <b>Inscrições</b>
-        <span class="mut" id="count"></span>
+    <!-- Tabela de Inscrições -->
+    <div class="table-container">
+      <div class="table-header">
+        <div class="table-title">📋 Inscrições</div>
+        <div class="table-count" id="count">-</div>
       </div>
-      <div class="center" id="loading">Carregando…</div>
+      
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Carregando dados...</div>
+      </div>
+      
       <div class="hide" id="tblWrap">
         <table id="tbl">
           <thead>
@@ -109,117 +541,174 @@
       </div>
     </div>
 
-    <div class="card" style="margin-top:16px">
-      <b>Capacidade</b>
-      <div class="grid g2" id="capGrid" style="margin-top:10px"></div>
+    <!-- Capacidade -->
+    <div class="card">
+      <h3 style="margin-top: 0;">📊 Capacidade das Práticas</h3>
+      <div class="capacity-grid" id="capGrid"></div>
     </div>
   </div>
 </div>
 
 <script>
-const $=s=>document.querySelector(s);
-const apiEl=$('#api'), pwdEl=$('#pwd'), enterBtn=$('#btEnter'), loginCard=$('#loginCard'), loginMsg=$('#loginMsg'), dash=$('#dash');
-const fPratica=$('#fPratica'), fSerie=$('#fSerie'), fQ=$('#fQ'), btFiltrar=$('#btFiltrar'), btCSV=$('#btCSV');
-const totEl=$('#tot'), esgotEl=$('#esgot'), lastEl=$('#last'), loading=$('#loading'), tblWrap=$('#tblWrap'), tbody=$('#tbody'), count=$('#count'), capGrid=$('#capGrid');
+const $ = s => document.querySelector(s);
+const apiEl = $('#api'), pwdEl = $('#pwd'), enterBtn = $('#btEnter'), loginCard = $('#loginCard'), loginMsg = $('#loginMsg'), dash = $('#dash');
+const fPratica = $('#fPratica'), fSerie = $('#fSerie'), fQ = $('#fQ'), btFiltrar = $('#btFiltrar'), btCSV = $('#btCSV');
+const totEl = $('#tot'), esgotEl = $('#esgot'), lastEl = $('#last'), loading = $('#loading'), tblWrap = $('#tblWrap'), tbody = $('#tbody'), count = $('#count'), capGrid = $('#capGrid');
 
-let TOKEN='', API='';
+let TOKEN = '', API = '';
 
-function setSession(a,t){ sessionStorage.setItem('pi_api',a); sessionStorage.setItem('pi_token',t); }
-function restoreSession(){ const a=sessionStorage.getItem('pi_api'), t=sessionStorage.getItem('pi_token'); if(a&&t){API=a;TOKEN=t; return true;} return false; }
+function setSession(a, t) { 
+  sessionStorage.setItem('pi_api', a); 
+  sessionStorage.setItem('pi_token', t); 
+}
 
-// Função para fazer requisições autenticadas
+function restoreSession() { 
+  const a = sessionStorage.getItem('pi_api'), t = sessionStorage.getItem('pi_token'); 
+  if (a && t) { 
+    API = a; 
+    TOKEN = t; 
+    return true; 
+  } 
+  return false; 
+}
+
+function showMessage(element, text, type = 'error') {
+  element.textContent = text;
+  element.className = `message ${type}`;
+  element.classList.remove('hide');
+  
+  if (type === 'success') {
+    setTimeout(() => {
+      element.classList.add('hide');
+    }, 3000);
+  }
+}
+
+function hideMessage(element) {
+  element.classList.add('hide');
+}
+
 async function authedGet(url, params = {}) {
   const u = new URL(url);
   
-  // Adiciona parâmetros à URL
   Object.keys(params).forEach(key => {
-    if (params[key] !== undefined && params[key] !== '') {
-      u.searchParams.append(key, params[key]);
-    }
+    if (params[key]) u.searchParams.append(key, params[key]);
   });
   
-  // Adiciona a chave como parâmetro de consulta
   u.searchParams.append('key', TOKEN);
+  
+  console.log('Request URL:', u.toString());
   
   const res = await fetch(u.toString());
   const text = await res.text();
   let json;
   
-  try{ 
+  try { 
     json = JSON.parse(text);
-  } catch(e){ 
+  } catch(e) { 
     throw new Error('Resposta não-JSON: ' + text.substring(0, 100));
   }
   
-  if(!res.ok || json.ok === false){
-    throw new Error(json.error || ('HTTP '+res.status));
+  if (!res.ok || json.ok === false) {
+    throw new Error(json.error || ('HTTP ' + res.status));
   }
   
   return json;
 }
 
-function fmtDate(iso){ try{return new Date(iso).toLocaleString();}catch(_){return iso||'';} }
-function renderStats(s){
-  totEl.textContent = s.totalInscricoes;
-  lastEl.textContent = new Date().toLocaleString();
-  const cap = s.capacidade||[];
-  esgotEl.textContent = cap.filter(c=>(+c.restantes||0)===0).length;
+function fmtDate(iso) { 
+  try {
+    return new Date(iso).toLocaleString('pt-BR');
+  } catch(_) {
+    return iso || '';
+  } 
+}
+
+function renderStats(s) {
+  totEl.textContent = s.totalInscricoes || 0;
+  lastEl.textContent = new Date().toLocaleString('pt-BR');
+  const cap = s.capacidade || [];
+  esgotEl.textContent = cap.filter(c => (+c.restantes || 0) === 0).length;
 
   // Combo práticas
-  fPratica.innerHTML='<option value="">Todas</option>';
-  cap.forEach(c=>{ 
-    const o=document.createElement('option'); 
-    o.value=c.pratica; 
-    o.textContent=`${c.pratica} (${c.restantes} restantes)`;
+  fPratica.innerHTML = '<option value="">Todas</option>';
+  cap.forEach(c => { 
+    const o = document.createElement('option'); 
+    o.value = c.pratica; 
+    o.textContent = `${c.pratica} (${c.restantes} restantes)`; 
     fPratica.appendChild(o); 
   });
   
   // Cards capacidade
-  capGrid.innerHTML='';
-  cap.forEach(c=>{
-    const d=document.createElement('div'); 
-    d.className='stat';
-    d.innerHTML=`<div class="mut">${c.pratica}</div><b>${c.inscritos}/${c.limite}</b><div class="${(+c.restantes>0)?'ok':'err'}">${(+c.restantes>0)?(c.restantes+' vagas'):'ESGOTADO'}</div>`;
+  capGrid.innerHTML = '';
+  cap.forEach(c => {
+    const restantes = +c.restantes || 0;
+    const inscritos = +c.inscritos || 0;
+    const limite = +c.limite || 0;
+    const percentual = limite > 0 ? (inscritos / limite) * 100 : 0;
+    
+    const d = document.createElement('div'); 
+    d.className = 'capacity-item';
+    d.innerHTML = `
+      <div class="capacity-name">${c.pratica}</div>
+      <div class="capacity-numbers">
+        <span class="capacity-ratio">${inscritos}/${limite}</span>
+        <span class="capacity-status ${restantes > 0 ? 'available' : 'full'}">
+          ${restantes > 0 ? `${restantes} vagas` : 'ESGOTADO'}
+        </span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${Math.min(percentual, 100)}%"></div>
+      </div>
+    `;
     capGrid.appendChild(d);
   });
 }
 
-function renderRows(rows){
-  tbody.innerHTML=''; 
-  rows.forEach(r=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${fmtDate(r.ts)}</td><td>${r.nome}</td><td>${r.serie}</td><td>${r.pratica}</td><td>${r.id}</td>`;
+function renderRows(rows) {
+  tbody.innerHTML = ''; 
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${fmtDate(r.ts)}</td>
+      <td><strong>${r.nome}</strong></td>
+      <td>${r.serie}</td>
+      <td>${r.pratica}</td>
+      <td><code>${r.id}</code></td>
+    `;
     tbody.appendChild(tr);
   });
-  count.textContent=`${rows.length} registro(s)`;
+  count.textContent = `${rows.length} registro(s) encontrado(s)`;
 }
 
-async function loadStats(){ 
+async function loadStats() { 
   return authedGet(API, {stats: '1'}); 
 }
 
-async function loadList(){
+async function loadList() {
   const params = {list: '1'};
-  const p = fPratica.value||'', s = fSerie.value||'', q = (fQ.value||'').trim();
-  if(p) params.pratica = p;
-  if(s) params.serie = s;
-  if(q) params.q = q;
+  const p = fPratica.value || '', s = fSerie.value || '', q = (fQ.value || '').trim();
+  if (p) params.pratica = p;
+  if (s) params.serie = s;
+  if (q) params.q = q;
   
   return authedGet(API, params);
 }
 
-enterBtn.addEventListener('click', async ()=>{
+enterBtn.addEventListener('click', async () => {
   API = apiEl.value.trim(); 
   TOKEN = pwdEl.value.trim();
   
-  if(!API || !TOKEN){ 
-    loginMsg.textContent='Informe a URL da API e a senha.'; 
+  if (!API || !TOKEN) { 
+    showMessage(loginMsg, 'Informe a URL da API e a senha.', 'error');
     return; 
   }
   
-  loginMsg.innerHTML = '<span class="spinner"></span>Validando…';
+  enterBtn.disabled = true;
+  enterBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Validando...';
+  showMessage(loginMsg, 'Validando credenciais...', 'warning');
   
-  try{
+  try {
     const stats = await loadStats(); 
     setSession(API, TOKEN);
     loginCard.classList.add('hide'); 
@@ -230,38 +719,52 @@ enterBtn.addEventListener('click', async ()=>{
     tblWrap.classList.add('hide');
     
     const lst = await loadList(); 
-    renderRows(lst.rows||[]); 
+    renderRows(lst.rows || []); 
     loading.classList.add('hide'); 
     tblWrap.classList.remove('hide'); 
-    loginMsg.textContent='';
-  } catch(err){ 
+    hideMessage(loginMsg);
+    
+    showMessage(loginMsg, 'Login realizado com sucesso!', 'success');
+  } catch(err) { 
     console.error('Erro:', err);
-    loginMsg.textContent='Falha no acesso: '+err.message; 
+    showMessage(loginMsg, 'Falha no acesso: ' + err.message, 'error');
+  } finally {
+    enterBtn.disabled = false;
+    enterBtn.innerHTML = '<span>🔑</span>Entrar';
   }
 });
 
-// restaura sessão
-if(restoreSession()){ 
-  apiEl.value=API; 
-  pwdEl.value=TOKEN; 
+// Restaura sessão
+if (restoreSession()) { 
+  apiEl.value = API; 
+  pwdEl.value = TOKEN; 
   enterBtn.click(); 
 }
 
-// filtros
-btFiltrar.addEventListener('click', async ()=>{
-  $('#fltMsg').textContent='Atualizando…';
-  try{ 
+// Filtros
+btFiltrar.addEventListener('click', async () => {
+  btFiltrar.disabled = true;
+  btFiltrar.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Atualizando...';
+  showMessage($('#fltMsg'), 'Aplicando filtros...', 'warning');
+  
+  try { 
     const [s, l] = await Promise.all([loadStats(), loadList()]); 
     renderStats(s); 
-    renderRows(l.rows||[]); 
-    $('#fltMsg').textContent='Pronto.'; 
-  } catch(err){ 
-    $('#fltMsg').textContent='Erro: '+err.message; 
+    renderRows(l.rows || []); 
+    showMessage($('#fltMsg'), 'Filtros aplicados com sucesso!', 'success');
+  } catch(err) { 
+    showMessage($('#fltMsg'), 'Erro: ' + err.message, 'error');
+  } finally {
+    btFiltrar.disabled = false;
+    btFiltrar.innerHTML = '<span>🔄</span>Aplicar Filtros';
   }
 });
 
-// CSV
-btCSV.addEventListener('click', ()=>{
+// CSV Export
+btCSV.addEventListener('click', () => {
+  btCSV.disabled = true;
+  btCSV.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Exportando...';
+  
   const u = new URL(API);
   u.searchParams.set('export', 'csv');
   u.searchParams.set('key', TOKEN);
@@ -272,12 +775,34 @@ btCSV.addEventListener('click', ()=>{
       const blob = new Blob([txt], {type: 'text/csv;charset=utf-8;'});
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'inscricoes.csv';
+      a.download = `inscricoes_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
+      
+      showMessage($('#fltMsg'), 'CSV exportado com sucesso!', 'success');
     })
-    .catch(() => alert('Erro ao exportar CSV'));
+    .catch(() => {
+      showMessage($('#fltMsg'), 'Erro ao exportar CSV', 'error');
+    })
+    .finally(() => {
+      btCSV.disabled = false;
+      btCSV.innerHTML = '<span>📊</span>Exportar CSV';
+    });
+});
+
+// Enter key support
+pwdEl.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    enterBtn.click();
+  }
+});
+
+fQ.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    btFiltrar.click();
+  }
 });
 </script>
 </body>
 </html>
+
