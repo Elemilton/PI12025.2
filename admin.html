@@ -155,24 +155,23 @@ function restoreSession(){
   return false;
 }
 
+// 🔑 Toda chamada ADMIN agora usa ?key=<senha> (query string)
 async function authedGet(url){
-  const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + TOKEN } });
+  const u = new URL(url);
+  u.searchParams.set('key', TOKEN);
+  const res = await fetch(u.toString());
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
 function fmtDate(iso){
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString();
-  } catch(_){ return iso || ''; }
+  try { return new Date(iso).toLocaleString(); } catch(_){ return iso || ''; }
 }
 
 function renderStats(stats){
   totEl.textContent = stats.totalInscricoes;
   lastEl.textContent = new Date().toLocaleString();
   CAP = stats.capacidade || [];
-
   const esgotadas = (CAP || []).filter(c => Number(c.restantes||0) === 0).length;
   esgotEl.textContent = esgotadas;
 
@@ -276,11 +275,12 @@ btFiltrar.addEventListener('click', async ()=>{
   }
 });
 
-// CSV
+// CSV (também com ?key=…)
 btCSV.addEventListener('click', ()=>{
   const u = new URL(API);
   u.searchParams.set('export','csv');
-  fetch(u.toString(), { headers: { 'Authorization': 'Bearer ' + TOKEN }})
+  u.searchParams.set('key', TOKEN);
+  fetch(u.toString())
     .then(r => r.text())
     .then(txt => {
       const blob = new Blob([txt], {type: 'text/csv;charset=utf-8;'});
