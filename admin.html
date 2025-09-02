@@ -10,7 +10,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.js"></script>
+<!-- Docx UMD (cria window.docx) -->
+<script src="https://cdn.jsdelivr.net/npm/docx@9.5.1/build/index.umd.js"></script>
 
 <style>
   :root { 
@@ -465,9 +466,19 @@ function exportToXLSX() {
 }
 
 function exportToDOCX() {
-  if (!currentData.length) return;
-
+  if (!currentData.length) {
+    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+    return;
+  }
+  if (!window.docx) {
+    showMessage($('#fltMsg'), 'A biblioteca DOCX não foi carregada. Verifique o script (index.umd.js).', 'error');
+    return;
+  }
   const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType } = window.docx;
+  if (!Document || !Packer) {
+    showMessage($('#fltMsg'), 'DOCX indisponível (build incorreto). Use index.umd.js.', 'error');
+    return;
+  }
 
   const headerCells = ['Data/Hora','Nome','Série/Turma','Prática','ID'].map(h =>
     new TableCell({
@@ -502,6 +513,8 @@ function exportToDOCX() {
   Packer.toBlob(doc).then(blob => {
     const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.docx`;
     saveAs(blob, filename);
+  }).catch(err => {
+    showMessage($('#fltMsg'), 'Erro ao empacotar DOCX: ' + err.message, 'error');
   });
 }
 
@@ -590,7 +603,7 @@ btXLSX.addEventListener('click', () => {
 btDOCX.addEventListener('click', () => {
   if (!currentData.length) return showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
   btDOCX.disabled = true; btDOCX.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Gerando...';
-  try { exportToDOCX(); showMessage($('#fltMsg'), 'DOCX gerado com sucesso!', 'success'); }
+  try { exportToDOCX(); }
   catch(err){ showMessage($('#fltMsg'), 'Erro ao gerar DOCX: ' + err.message, 'error'); }
   finally { btDOCX.disabled = false; btDOCX.innerHTML = '<span>📝</span>DOCX'; }
 });
@@ -615,3 +628,4 @@ btLogout?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
