@@ -38,7 +38,7 @@
     <div class="grid g2">
       <div>
         <label>URL da API</label>
-        <input id="api" value="https://script.google.com/macros/s/AKfycbxYaCI3GY-4inAXcXPJdGritrJKH7xq1Z4vUs9-rPA4QS2szhNr0wa8OlLN1LqwQkKR/exec">
+        <input id="api" value="https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec">
         <small class="mut">Mantenha essa URL (ou ajuste se reimplantar).</small>
       </div>
       <div>
@@ -125,12 +125,34 @@ let TOKEN='', API='';
 function setSession(a,t){ sessionStorage.setItem('pi_api',a); sessionStorage.setItem('pi_token',t); }
 function restoreSession(){ const a=sessionStorage.getItem('pi_api'), t=sessionStorage.getItem('pi_token'); if(a&&t){API=a;TOKEN=t; return true;} return false; }
 
-// Todas as chamadas ADMIN usam ?key=<senha>
-async function authedGet(url){
-  const u=new URL(url); u.searchParams.set('key',TOKEN);
-  const res=await fetch(u.toString()); const text=await res.text();
-  let json; try{ json=JSON.parse(text);}catch{ throw new Error('Resposta não-JSON: '+text); }
-  if(!res.ok || json.ok===false){ throw new Error(json.error||('HTTP '+res.status)); }
+// Todas as chamadas ADMIN usam a senha no corpo da requisição
+async function authedGet(url, params = {}) {
+  const u = new URL(url);
+  
+  // Adiciona parâmetros à URL
+  Object.keys(params).forEach(key => {
+    if (params[key]) u.searchParams.append(key, params[key]);
+  });
+  
+  // Adiciona a chave como parâmetro de consulta
+  u.searchParams.append('key', TOKEN);
+  
+  console.log('Request URL:', u.toString());
+  
+  const res = await fetch(u.toString());
+  const text = await res.text();
+  let json;
+  
+  try{ 
+    json = JSON.parse(text);
+  } catch(e){ 
+    throw new Error('Resposta não-JSON: ' + text.substring(0, 100));
+  }
+  
+  if(!res.ok || json.ok === false){
+    throw new Error(json.error || ('HTTP '+res.status));
+  }
+  
   return json;
 }
 
@@ -161,43 +183,89 @@ function renderRows(rows){
   count.textContent=`${rows.length} registro(s)`;
 }
 
-async function loadStats(){ return authedGet(`${API}?stats=1`); }
+async function loadStats(){ 
+  return authedGet(API, {stats: '1'}); 
+}
+
 async function loadList(){
-  const u=new URL(API); u.searchParams.set('list','1');
-  const p=fPratica.value||'', s=fSerie.value||'', q=(fQ.value||'').trim();
-  if(p)u.searchParams.set('pratica',p); if(s)u.searchParams.set('serie',s); if(q)u.searchParams.set('q',q);
-  return authedGet(u.toString());
+  const params = {list: '1'};
+  const p = fPratica.value||'', s = fSerie.value||'', q = (fQ.value||'').trim();
+  if(p) params.pratica = p;
+  if(s) params.serie = s;
+  if(q) params.q = q;
+  
+  return authedGet(API, params);
 }
 
 enterBtn.addEventListener('click', async ()=>{
-  API=apiEl.value.trim(); TOKEN=pwdEl.value.trim();
-  if(!API||!TOKEN){ loginMsg.textContent='Informe a URL da API e a senha.'; return; }
+  API = apiEl.value.trim(); 
+  TOKEN = pwdEl.value.trim();
+  
+  if(!API || !TOKEN){ 
+    loginMsg.textContent='Informe a URL da API e a senha.'; 
+    return; 
+  }
+  
   loginMsg.textContent='Validando…';
+  
   try{
-    const stats=await loadStats(); setSession(API,TOKEN);
-    loginCard.classList.add('hide'); dash.classList.remove('hide'); renderStats(stats);
-    loading.classList.remove('hide'); tblWrap.classList.add('hide');
-    const lst=await loadList(); renderRows(lst.rows||[]); loading.classList.add('hide'); tblWrap.classList.remove('hide'); loginMsg.textContent='';
-  }catch(err){ loginMsg.textContent='Falha no acesso: '+err.message; }
+    const stats = await loadStats(); 
+    setSession(API, TOKEN);
+    loginCard.classList.add('hide'); 
+    dash.classList.remove('hide'); 
+    renderStats(stats);
+    
+    loading.classList.remove('hide'); 
+    tblWrap.classList.add('hide');
+    
+    const lst = await loadList(); 
+    renderRows(lst.rows||[]); 
+    loading.classList.add('hide'); 
+    tblWrap.classList.remove('hide'); 
+    loginMsg.textContent='';
+  } catch(err){ 
+    console.error('Erro:', err);
+    loginMsg.textContent='Falha no acesso: '+err.message; 
+  }
 });
 
 // restaura sessão
-if(restoreSession()){ apiEl.value=API; pwdEl.value=TOKEN; enterBtn.click(); }
+if(restoreSession()){ 
+  apiEl.value=API; 
+  pwdEl.value=TOKEN; 
+  enterBtn.click(); 
+}
 
 // filtros
 btFiltrar.addEventListener('click', async ()=>{
   $('#fltMsg').textContent='Atualizando…';
-  try{ const [s,l]=await Promise.all([loadStats(),loadList()]); renderStats(s); renderRows(l.rows||[]); $('#fltMsg').textContent='Pronto.'; }
-  catch(err){ $('#fltMsg').textContent='Erro: '+err.message; }
+  try{ 
+    const [s, l] = await Promise.all([loadStats(), loadList()]); 
+    renderStats(s); 
+    renderRows(l.rows||[]); 
+    $('#fltMsg').textContent='Pronto.'; 
+  } catch(err){ 
+    $('#fltMsg').textContent='Erro: '+err.message; 
+  }
 });
 
 // CSV
 btCSV.addEventListener('click', ()=>{
-  const u=new URL(API); u.searchParams.set('export','csv'); u.searchParams.set('key',TOKEN);
-  fetch(u.toString()).then(r=>r.text()).then(txt=>{
-    const blob=new Blob([txt],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob); a.download='inscricoes.csv'; a.click(); URL.revokeObjectURL(a.href);
-  }).catch(()=>alert('Erro ao exportar CSV'));
+  const u = new URL(API);
+  u.searchParams.set('export', 'csv');
+  u.searchParams.set('key', TOKEN);
+  
+  fetch(u.toString())
+    .then(r => r.text())
+    .then(txt => {
+      const blob = new Blob([txt], {type: 'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'inscricoes.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(() => alert('Erro ao exportar CSV'));
 });
 </script>
 </body>
