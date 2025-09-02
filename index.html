@@ -36,7 +36,7 @@
   <div class="card">
     <header>
       <h1>Práticas Integradoras 1 2025.2</h1>
-      <p class="sub">Preencha para garantir sua vaga.</p>
+      <p class="sub">Preencha para garantir sua vaga (cada prática tem <strong>20</strong> vagas).</p>
     </header>
 
     <form id="form">
@@ -74,14 +74,13 @@
     </form>
 
     <div class="foot">
-      <span>ECI MAria Zeca de Souza • 2025</span>
+      <span>GitHub Pages • Google Sheets</span>
       <span id="lastSync">Sincronizando...</span>
     </div>
   </div>
 
   <script>
-    // ✅ Nova URL da sua Web App:
-    const API_URL = "https://script.google.com/macros/s/AKfycbxmrQ24xs9uaMoprfxMOv0Di1_rs925zD5_1b5P5Qe6mSoRg-pJ8dE5r5PPfRou1V4-/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec";
 
     const $ = (sel) => document.querySelector(sel);
     const form = $("#form");
@@ -103,10 +102,9 @@
         const items = (json && json.availability) ? json.availability : [];
         renderOptions(items);
         renderChips(items);
-
         lastSync.textContent = "Atualizado agora";
       } catch (e) {
-        statusBox.textContent = "Não foi possível carregar a disponibilidade. Verifique a implantação da API.";
+        statusBox.textContent = "Não foi possível carregar a disponibilidade. Verifique a API.";
         statusBox.className = "status err";
       } finally {
         btn.disabled = false;
@@ -156,7 +154,7 @@
       btn.textContent = "Enviando...";
 
       try {
-        // Envia como text/plain para evitar preflight CORS
+        // text/plain evita preflight CORS
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -169,7 +167,7 @@
           statusBox.textContent = "Inscrição registrada com sucesso! ✅";
           statusBox.className = "status ok";
           form.reset();
-          await loadAvailability(); // atualiza vagas
+          await loadAvailability();
         } else if (json.full) {
           statusBox.textContent = "Essa prática esgotou enquanto você enviava. Escolha outra opção.";
           statusBox.className = "status err";
@@ -188,7 +186,6 @@
       }
     });
 
-    // Carrega e atualiza periodicamente
     loadAvailability();
     setInterval(loadAvailability, 60000);
   </script>
