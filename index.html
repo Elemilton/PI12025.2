@@ -80,7 +80,7 @@
   </div>
 
   <script>
-    // ✅ Sua URL da API já inserida:
+    // URL da sua Web App (Apps Script)
     const API_URL = "https://script.google.com/macros/s/AKfycbztzhB4EQtb4crB23288cXunQrSobTz5qOdqCOy_WUYDeRFfzwZ_7iKnHRdGjp_Qe0/exec";
 
     const $ = (sel) => document.querySelector(sel);
@@ -106,7 +106,7 @@
 
         lastSync.textContent = "Atualizado agora";
       } catch (e) {
-        statusBox.textContent = "Não foi possível carregar a disponibilidade. Tente novamente.";
+        statusBox.textContent = "Não foi possível carregar a disponibilidade. Verifique a implantação da API.";
         statusBox.className = "status err";
       } finally {
         btn.disabled = false;
@@ -148,6 +148,7 @@
       if (!nome || !serie || !pratica) {
         statusBox.textContent = "Preencha todos os campos.";
         statusBox.className = "status err";
+        statusBox.style.display = "block";
         return;
       }
 
@@ -155,18 +156,21 @@
       btn.textContent = "Enviando...";
 
       try {
+        // Envia como text/plain para evitar preflight CORS
         const res = await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ nome, serie, pratica })
         });
+
+        // Apps Script retorna 200/ok com JSON
         const json = await res.json();
 
         if (json.ok) {
           statusBox.textContent = "Inscrição registrada com sucesso! ✅";
           statusBox.className = "status ok";
           form.reset();
-          await loadAvailability();
+          await loadAvailability(); // atualiza vagas
         } else if (json.full) {
           statusBox.textContent = "Essa prática esgotou enquanto você enviava. Escolha outra opção.";
           statusBox.className = "status err";
@@ -176,7 +180,7 @@
           statusBox.className = "status err";
         }
       } catch (err) {
-        statusBox.textContent = "Falha na conexão. Tente novamente.";
+        statusBox.textContent = "Falha na conexão. Verifique a URL/implantação da API.";
         statusBox.className = "status err";
       } finally {
         statusBox.style.display = "block";
@@ -185,6 +189,7 @@
       }
     });
 
+    // Carrega e atualiza periodicmente
     loadAvailability();
     setInterval(loadAvailability, 60000);
   </script>
