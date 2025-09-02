@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin • Práticas Integradoras 1 2025.2</title>
+<style>
+  :root { --bg:#0b0e16; --card:#141a2a; --txt:#e9ecf1; --mut:#9aa3b2; --acc:#7c5cff; --ok:#2fd180; --err:#ff6b7a; --line:#1f2740;}
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(120deg,#0b0e16,#0e1322 45%,#0a1230);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial,sans-serif;min-height:100dvh}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px}
+  h1{margin:0 0 8px;font-size:1.4rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr}
+  .g3{grid-template-columns:1fr}
+  @media(min-width:900px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}}
+  input,select,button{background:#0f1426;border:1px solid var(--line);color:var(--txt);padding:12px 12px;border-radius:10px;outline:none}
+  button{background:linear-gradient(135deg,var(--acc),#4c82ff);border:none;font-weight:700;cursor:pointer}
+  .mut{color:var(--mut);font-size:.9rem}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .stat{padding:12px;border:1px solid var(--line);border-radius:12px;background:#0f1323}
+  .stat b{font-size:1.2rem}
+  table{width:100%;border-collapse:collapse}
+  th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;font-size:.95rem}
+  tr:hover td{background:#0e152d}
+  .center{display:flex;justify-content:center;align-items:center;min-height:40vh}
+  .hide{display:none}
+  .err{color:var(--err)}
+  .ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Admin • Práticas Integradoras 1 2025.2</h1>
+  <p class="mut">Acesse com a senha para visualizar estatísticas, filtrar e exportar inscrições.</p>
+
+  <!-- LOGIN -->
+  <div id="loginCard" class="card">
+    <div class="grid g2">
+      <div>
+        <label>URL da API</label>
+        <input id="api" value="https://script.google.com/macros/s/AKfycbxmrQ24xs9uaMoprfxMOv0Di1_rs925zD5_1b5P5Qe6mSoRg-pJ8dE5r5PPfRou1V4-/exec">
+        <small class="mut">Mantenha essa URL (ou ajuste se reimplantar).</small>
+      </div>
+      <div>
+        <label>Senha</label>
+        <input id="pwd" type="password" placeholder="••••••••">
+        <small class="mut">Senha padrão: <code>zecam2025</code></small>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="btEnter">Entrar</button>
+      <span id="loginMsg" class="mut"></span>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dash" class="hide">
+    <div class="grid g3" style="margin:16px 0">
+      <div class="stat"><div class="mut">Total de inscrições</div><b id="tot"></b></div>
+      <div class="stat"><div class="mut">Práticas com vagas esgotadas</div><b id="esgot"></b></div>
+      <div class="stat"><div class="mut">Última atualização</div><b id="last"></b></div>
+    </div>
+
+    <div class="card">
+      <div class="grid g2">
+        <div>
+          <label>Prática</label>
+          <select id="fPratica"><option value="">Todas</option></select>
+        </div>
+        <div>
+          <label>Série/Turma</label>
+          <select id="fSerie">
+            <option value="">Todas</option>
+            <option>1° A</option><option>1° B</option><option>1° C</option><option>1° D</option><option>1° E</option>
+            <option>2° A</option><option>2° B</option><option>2° C</option>
+            <option>3° A</option><option>3° B</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <input id="fQ" placeholder="Buscar por nome...">
+        <button id="btFiltrar">Aplicar filtros</button>
+        <button id="btCSV">Exportar CSV</button>
+        <span id="fltMsg" class="mut"></span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="row" style="justify-content:space-between">
+        <b>Inscrições</b>
+        <span class="mut" id="count"></span>
+      </div>
+      <div class="center" id="loading">Carregando…</div>
+      <div class="hide" id="tblWrap">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Nome</th>
+              <th>Série/Turma</th>
+              <th>Prática</th>
+              <th>ID</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <b>Capacidade</b>
+      <div class="grid g2" id="capGrid" style="margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const apiEl = $('#api');
+const pwdEl = $('#pwd');
+const enterBtn = $('#btEnter');
+const loginCard = $('#loginCard');
+const loginMsg = $('#loginMsg');
+const dash = $('#dash');
+
+const fPratica = $('#fPratica');
+const fSerie = $('#fSerie');
+const fQ = $('#fQ');
+const btFiltrar = $('#btFiltrar');
+const btCSV = $('#btCSV');
+
+const totEl = $('#tot');
+const esgotEl = $('#esgot');
+const lastEl = $('#last');
+const loading = $('#loading');
+const tblWrap = $('#tblWrap');
+const tbody = $('#tbody');
+const count = $('#count');
+const capGrid = $('#capGrid');
+
+let TOKEN = '';
+let API = '';
+let CAP = [];
+
+function setSession(api, token){
+  sessionStorage.setItem('pi_api', api);
+  sessionStorage.setItem('pi_token', token);
+}
+function restoreSession(){
+  const a = sessionStorage.getItem('pi_api');
+  const t = sessionStorage.getItem('pi_token');
+  if (a && t){ API = a; TOKEN = t; return true; }
+  return false;
+}
+
+async function authedGet(url){
+  const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + TOKEN } });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+function fmtDate(iso){
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString();
+  } catch(_){ return iso || ''; }
+}
+
+function renderStats(stats){
+  totEl.textContent = stats.totalInscricoes;
+  lastEl.textContent = new Date().toLocaleString();
+  CAP = stats.capacidade || [];
+
+  const esgotadas = (CAP || []).filter(c => Number(c.restantes||0) === 0).length;
+  esgotEl.textContent = esgotadas;
+
+  // Combo de práticas
+  fPratica.innerHTML = '<option value="">Todas</option>';
+  (CAP || []).forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.pratica;
+    opt.textContent = `${c.pratica} (${c.restantes} restantes)`;
+    fPratica.appendChild(opt);
+  });
+
+  // Capacidade cards
+  capGrid.innerHTML = '';
+  (CAP || []).forEach(c=>{
+    const div = document.createElement('div');
+    div.className = 'stat';
+    div.innerHTML = `
+      <div class="mut">${c.pratica}</div>
+      <b>${c.inscritos}/${c.limite}</b>
+      <div class="${c.restantes>0?'ok':'err'}">${c.restantes>0? c.restantes+' vagas' : 'ESGOTADO'}</div>
+    `;
+    capGrid.appendChild(div);
+  });
+}
+
+function renderRows(rows){
+  tbody.innerHTML = '';
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${fmtDate(r.ts)}</td>
+      <td>${r.nome}</td>
+      <td>${r.serie}</td>
+      <td>${r.pratica}</td>
+      <td>${r.id}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  count.textContent = `${rows.length} registro(s)`;
+}
+
+async function loadStats(){
+  const url = `${API}?stats=1`;
+  return authedGet(url);
+}
+
+async function loadList(){
+  const u = new URL(API);
+  u.searchParams.set('list','1');
+  const pratica = fPratica.value || '';
+  const serie = fSerie.value || '';
+  const q = (fQ.value || '').trim();
+  if (pratica) u.searchParams.set('pratica', pratica);
+  if (serie) u.searchParams.set('serie', serie);
+  if (q) u.searchParams.set('q', q);
+  return authedGet(u.toString());
+}
+
+enterBtn.addEventListener('click', async ()=>{
+  API = apiEl.value.trim();
+  TOKEN = pwdEl.value.trim();
+  if (!API || !TOKEN){ loginMsg.textContent = 'Informe a URL da API e a senha.'; return; }
+  loginMsg.textContent = 'Validando…';
+  try{
+    const stats = await loadStats();
+    if (!stats.ok) throw new Error('Não autorizado');
+    setSession(API, TOKEN);
+    loginCard.classList.add('hide');
+    dash.classList.remove('hide');
+    renderStats(stats);
+
+    loading.classList.remove('hide');
+    tblWrap.classList.add('hide');
+    const lst = await loadList();
+    renderRows(lst.rows || []);
+    loading.classList.add('hide');
+    tblWrap.classList.remove('hide');
+    loginMsg.textContent = '';
+  }catch(err){
+    loginMsg.textContent = 'Falha no acesso (verifique URL e senha).';
+  }
+});
+
+// restaura sessão
+if (restoreSession()){
+  apiEl.value = API; pwdEl.value = TOKEN;
+  enterBtn.click();
+}
+
+// filtros
+btFiltrar.addEventListener('click', async ()=>{
+  $('#fltMsg').textContent = 'Atualizando…';
+  try{
+    const [stats, lst] = await Promise.all([loadStats(), loadList()]);
+    renderStats(stats);
+    renderRows(lst.rows || []);
+    $('#fltMsg').textContent = 'Pronto.';
+  }catch(err){
+    $('#fltMsg').textContent = 'Erro ao aplicar filtros.';
+  }
+});
+
+// CSV
+btCSV.addEventListener('click', ()=>{
+  const u = new URL(API);
+  u.searchParams.set('export','csv');
+  fetch(u.toString(), { headers: { 'Authorization': 'Bearer ' + TOKEN }})
+    .then(r => r.text())
+    .then(txt => {
+      const blob = new Blob([txt], {type: 'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'inscricoes.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(()=> alert('Erro ao exportar CSV'));
+});
+</script>
+</body>
+</html>
