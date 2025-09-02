@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin • Práticas Integradoras 1 2025.2</title>
+
+<!-- Bibliotecas para exportação -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
 <style>
   :root { 
     --bg: #0a0d14; 
@@ -133,6 +140,7 @@
     justify-content: center;
     gap: 8px;
     text-decoration: none;
+    min-width: 120px;
   }
   
   .btn:hover {
@@ -158,6 +166,29 @@
   .btn-secondary:hover {
     background: #242b42;
     box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+  }
+  
+  .btn-pdf {
+    background: linear-gradient(135deg, #ff4757, #ff6b7a);
+  }
+  
+  .btn-excel {
+    background: linear-gradient(135deg, #2ed573, #2fd180);
+  }
+  
+  .btn-word {
+    background: linear-gradient(135deg, #3742fa, #4c82ff);
+  }
+  
+  .btn-csv {
+    background: linear-gradient(135deg, #ffa726, #ffb74d);
+  }
+  
+  .export-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
   }
   
   .stats-grid {
@@ -420,6 +451,14 @@
       width: 100%;
     }
     
+    .export-buttons {
+      flex-direction: column;
+    }
+    
+    .export-buttons button {
+      width: 100%;
+    }
+    
     table {
       font-size: 0.85rem;
     }
@@ -505,11 +544,27 @@
           <span>🔄</span>
           Aplicar Filtros
         </button>
-        <button id="btCSV" class="btn btn-secondary">
-          <span>📊</span>
-          Exportar CSV
-        </button>
         <span id="fltMsg" class="message hide"></span>
+      </div>
+      
+      <!-- Botões de Exportação -->
+      <div class="export-buttons">
+        <button id="btPDF" class="btn btn-pdf">
+          <span>📄</span>
+          PDF
+        </button>
+        <button id="btXLSX" class="btn btn-excel">
+          <span>📊</span>
+          XLSX
+        </button>
+        <button id="btDOCX" class="btn btn-word">
+          <span>📝</span>
+          DOCX
+        </button>
+        <button id="btCSV" class="btn btn-csv">
+          <span>📋</span>
+          CSV
+        </button>
       </div>
     </div>
 
@@ -552,10 +607,12 @@
 <script>
 const $ = s => document.querySelector(s);
 const apiEl = $('#api'), pwdEl = $('#pwd'), enterBtn = $('#btEnter'), loginCard = $('#loginCard'), loginMsg = $('#loginMsg'), dash = $('#dash');
-const fPratica = $('#fPratica'), fSerie = $('#fSerie'), fQ = $('#fQ'), btFiltrar = $('#btFiltrar'), btCSV = $('#btCSV');
+const fPratica = $('#fPratica'), fSerie = $('#fSerie'), fQ = $('#fQ'), btFiltrar = $('#btFiltrar');
+const btPDF = $('#btPDF'), btXLSX = $('#btXLSX'), btDOCX = $('#btDOCX'), btCSV = $('#btCSV');
 const totEl = $('#tot'), esgotEl = $('#esgot'), lastEl = $('#last'), loading = $('#loading'), tblWrap = $('#tblWrap'), tbody = $('#tbody'), count = $('#count'), capGrid = $('#capGrid');
 
 let TOKEN = '', API = '';
+let currentData = []; // Armazena os dados atuais para exportação
 
 function setSession(a, t) { 
   sessionStorage.setItem('pi_api', a); 
@@ -666,6 +723,7 @@ function renderStats(s) {
 }
 
 function renderRows(rows) {
+  currentData = rows; // Armazena os dados para exportação
   tbody.innerHTML = ''; 
   rows.forEach(r => {
     const tr = document.createElement('tr');
@@ -695,6 +753,171 @@ async function loadList() {
   return authedGet(API, params);
 }
 
+// Funções de exportação
+function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  // Título
+  doc.setFontSize(16);
+  doc.text('Práticas Integradoras 1 2025.2 - Inscrições', 14, 20);
+  
+  // Data de geração
+  doc.setFontSize(10);
+  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 30);
+  
+  // Preparar dados para a tabela
+  const headers = [['Data/Hora', 'Nome', 'Série/Turma', 'Prática', 'ID']];
+  const data = currentData.map(row => [
+    fmtDate(row.ts),
+    row.nome,
+    row.serie,
+    row.pratica,
+    row.id
+  ]);
+  
+  // Adicionar tabela
+  doc.autoTable({
+    head: headers,
+    body: data,
+    startY: 40,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2
+    },
+    headStyles: {
+      fillColor: [124, 92, 255],
+      textColor: 255
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245]
+    }
+  });
+  
+  // Salvar
+  const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(filename);
+}
+
+function exportToXLSX() {
+  // Preparar dados
+  const data = [
+    ['Data/Hora', 'Nome', 'Série/Turma', 'Prática', 'ID'], // Cabeçalho
+    ...currentData.map(row => [
+      fmtDate(row.ts),
+      row.nome,
+      row.serie,
+      row.pratica,
+      row.id
+    ])
+  ];
+  
+  // Criar workbook
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  
+  // Definir largura das colunas
+  ws['!cols'] = [
+    { width: 20 }, // Data/Hora
+    { width: 30 }, // Nome
+    { width: 15 }, // Série/Turma
+    { width: 40 }, // Prática
+    { width: 15 }  // ID
+  ];
+  
+  // Adicionar worksheet ao workbook
+  XLSX.utils.book_append_sheet(wb, ws, 'Inscrições');
+  
+  // Salvar
+  const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+
+function exportToDOCX() {
+  // Criar conteúdo HTML para o documento
+  let htmlContent = `
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Práticas Integradoras 1 2025.2 - Inscrições</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #7c5cff; text-align: center; }
+          .info { text-align: center; margin-bottom: 30px; color: #666; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #7c5cff; color: white; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+        </style>
+      </head>
+      <body>
+        <h1>Práticas Integradoras 1 2025.2</h1>
+        <div class="info">
+          <p>Relatório de Inscrições</p>
+          <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+          <p>Total de registros: ${currentData.length}</p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Nome</th>
+              <th>Série/Turma</th>
+              <th>Prática</th>
+              <th>ID</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+  
+  currentData.forEach(row => {
+    htmlContent += `
+      <tr>
+        <td>${fmtDate(row.ts)}</td>
+        <td>${row.nome}</td>
+        <td>${row.serie}</td>
+        <td>${row.pratica}</td>
+        <td>${row.id}</td>
+      </tr>
+    `;
+  });
+  
+  htmlContent += `
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+  
+  // Criar blob e download
+  const blob = new Blob([htmlContent], {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  });
+  
+  const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.doc`;
+  saveAs(blob, filename);
+}
+
+function exportToCSV() {
+  const u = new URL(API);
+  u.searchParams.set('export', 'csv');
+  u.searchParams.set('key', TOKEN);
+  
+  fetch(u.toString())
+    .then(r => r.text())
+    .then(txt => {
+      const blob = new Blob([txt], {type: 'text/csv;charset=utf-8;'});
+      const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.csv`;
+      saveAs(blob, filename);
+      
+      showMessage($('#fltMsg'), 'CSV exportado com sucesso!', 'success');
+    })
+    .catch(() => {
+      showMessage($('#fltMsg'), 'Erro ao exportar CSV', 'error');
+    });
+}
+
+// Event Listeners
 enterBtn.addEventListener('click', async () => {
   API = apiEl.value.trim(); 
   TOKEN = pwdEl.value.trim();
@@ -760,34 +983,82 @@ btFiltrar.addEventListener('click', async () => {
   }
 });
 
-// CSV Export
+// Exportação
+btPDF.addEventListener('click', () => {
+  if (currentData.length === 0) {
+    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+    return;
+  }
+  
+  btPDF.disabled = true;
+  btPDF.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Gerando...';
+  
+  try {
+    exportToPDF();
+    showMessage($('#fltMsg'), 'PDF gerado com sucesso!', 'success');
+  } catch(err) {
+    showMessage($('#fltMsg'), 'Erro ao gerar PDF: ' + err.message, 'error');
+  } finally {
+    btPDF.disabled = false;
+    btPDF.innerHTML = '<span>📄</span>PDF';
+  }
+});
+
+btXLSX.addEventListener('click', () => {
+  if (currentData.length === 0) {
+    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+    return;
+  }
+  
+  btXLSX.disabled = true;
+  btXLSX.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Gerando...';
+  
+  try {
+    exportToXLSX();
+    showMessage($('#fltMsg'), 'XLSX gerado com sucesso!', 'success');
+  } catch(err) {
+    showMessage($('#fltMsg'), 'Erro ao gerar XLSX: ' + err.message, 'error');
+  } finally {
+    btXLSX.disabled = false;
+    btXLSX.innerHTML = '<span>📊</span>XLSX';
+  }
+});
+
+btDOCX.addEventListener('click', () => {
+  if (currentData.length === 0) {
+    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+    return;
+  }
+  
+  btDOCX.disabled = true;
+  btDOCX.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Gerando...';
+  
+  try {
+    exportToDOCX();
+    showMessage($('#fltMsg'), 'DOCX gerado com sucesso!', 'success');
+  } catch(err) {
+    showMessage($('#fltMsg'), 'Erro ao gerar DOCX: ' + err.message, 'error');
+  } finally {
+    btDOCX.disabled = false;
+    btDOCX.innerHTML = '<span>📝</span>DOCX';
+  }
+});
+
 btCSV.addEventListener('click', () => {
+  if (currentData.length === 0) {
+    showMessage($('#fltMsg'), 'Nenhum dado para exportar', 'warning');
+    return;
+  }
+  
   btCSV.disabled = true;
   btCSV.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; margin: 0 8px 0 0;"></div>Exportando...';
   
-  const u = new URL(API);
-  u.searchParams.set('export', 'csv');
-  u.searchParams.set('key', TOKEN);
+  exportToCSV();
   
-  fetch(u.toString())
-    .then(r => r.text())
-    .then(txt => {
-      const blob = new Blob([txt], {type: 'text/csv;charset=utf-8;'});
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `inscricoes_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      
-      showMessage($('#fltMsg'), 'CSV exportado com sucesso!', 'success');
-    })
-    .catch(() => {
-      showMessage($('#fltMsg'), 'Erro ao exportar CSV', 'error');
-    })
-    .finally(() => {
-      btCSV.disabled = false;
-      btCSV.innerHTML = '<span>📊</span>Exportar CSV';
-    });
+  setTimeout(() => {
+    btCSV.disabled = false;
+    btCSV.innerHTML = '<span>📋</span>CSV';
+  }, 1000);
 });
 
 // Enter key support
