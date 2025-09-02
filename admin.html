@@ -126,6 +126,8 @@
   .progress-bar { width: 100%; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 8px; }
   .progress-fill { height: 100%; background: var(--gradient); transition: width 0.3s ease; }
   .small-text { font-size: 0.8rem; color: var(--muted); }
+  .muted { color: var(--muted); font-size: .85rem; }
+  .linklike { background:none;border:none;padding:0;color:var(--accent);cursor:pointer;text-decoration:underline;font-weight:600 }
   @media (max-width: 768px) {
     .container { padding: 16px; }
     .header h1 { font-size: 1.5rem; }
@@ -149,17 +151,30 @@
   <!-- LOGIN -->
   <div id="loginCard" class="card">
     <h3 style="margin-top: 0;">Acesso Administrativo</h3>
-    <div class="grid grid-2">
+
+    <!-- Info da API resolvida -->
+    <div class="muted" id="apiInfo">Detectando API...</div>
+
+    <div id="apiEditor" class="grid grid-2 hide" style="margin-top:12px;">
       <div class="form-group">
         <label for="api">URL da API</label>
         <input id="api" placeholder="https://script.google.com/macros/s/....../exec" />
-        <small class="small-text">Cole aqui a URL do Web App do Google Apps Script</small>
+        <small class="small-text">Você pode sobrescrever a URL detectada aqui</small>
       </div>
+    </div>
+
+    <div style="margin-top:8px;">
+      <button id="toggleApi" class="linklike" type="button">⚙️ Configurar API</button>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px;">
       <div class="form-group">
         <label for="pwd">Senha</label>
         <input id="pwd" type="password" placeholder="••••••••" />
+        <small class="small-text">Somente a senha é necessária para entrar</small>
       </div>
     </div>
+
     <div class="controls">
       <button id="btEnter" class="btn"><span>🔑</span>Entrar</button>
       <span id="loginMsg" class="message hide" role="status" aria-live="polite"></span>
@@ -260,19 +275,54 @@
 </div>
 
 <script>
-/* ====== Atalhos e elementos ====== */
+/* ============ CONFIG E RESOLUÇÃO AUTOMÁTICA DA API ============ */
+const DEFAULT_API = "https://script.google.com/macros/s/AKfycbykc7MNsoeSVymKeGM1lAz0x6soF3UvFwLmqaLG6pZuCdCVjec_hZAp1JZghEUhqpZp/exec"; // troque se reimplantar
+
+function getQueryParam(name) {
+  const u = new URL(location.href);
+  const v = u.searchParams.get(name);
+  return v && v.trim() ? v.trim() : null;
+}
+
+async function resolveApi() {
+  // 1) ?api=
+  const qp = getQueryParam('api');
+  if (qp) return qp;
+
+  // 2) localStorage
+  const ls = localStorage.getItem('pi_api');
+  if (ls) return ls;
+
+  // 3) config.json (mesma origem) — opcional
+  try {
+    const r = await fetch('config.json', { cache: 'no-store' });
+    if (r.ok) {
+      const cfg = await r.json();
+      if (cfg && cfg.api) return String(cfg.api);
+    }
+  } catch(_) {}
+
+  // 4) fallback
+  return DEFAULT_API;
+}
+
+/* ============ ELEMENTOS E VARS ============ */
 const $ = s => document.querySelector(s);
-const apiEl = $('#api'), pwdEl = $('#pwd'), enterBtn = $('#btEnter'), loginCard = $('#loginCard'), loginMsg = $('#loginMsg'), dash = $('#dash');
+
+const apiInfo = $('#apiInfo'), apiEditor = $('#apiEditor'), apiEl = $('#api');
+const toggleApiBtn = $('#toggleApi');
+
+const pwdEl = $('#pwd'), enterBtn = $('#btEnter'), loginCard = $('#loginCard'), loginMsg = $('#loginMsg'), dash = $('#dash');
 const fPratica = $('#fPratica'), fSerie = $('#fSerie'), fQ = $('#fQ'), btFiltrar = $('#btFiltrar');
 const btPDF = $('#btPDF'), btXLSX = $('#btXLSX'), btDOCX = $('#btDOCX'), btCSV = $('#btCSV');
 const totEl = $('#tot'), esgotEl = $('#esgot'), lastEl = $('#last'), loading = $('#loading'), tblWrap = $('#tblWrap'), tbody = $('#tbody'), count = $('#count'), capGrid = $('#capGrid');
 const btLogout = $('#btLogout');
 
 let TOKEN = '', API = '';
-let currentData = []; // para exportações
+let currentData = []; // exportações
 let listController, statsController; // AbortController
 
-/* ====== Sessão ====== */
+/* ============ SESSÃO ============ */
 function setSession(a, t) { sessionStorage.setItem('pi_api', a); sessionStorage.setItem('pi_token', t); }
 function restoreSession() {
   const a = sessionStorage.getItem('pi_api'), t = sessionStorage.getItem('pi_token');
@@ -280,7 +330,7 @@ function restoreSession() {
   return false;
 }
 
-/* ====== Mensagens ====== */
+/* ============ MENSAGENS ============ */
 function showMessage(element, text, type = 'error') {
   element.textContent = text;
   element.className = `message ${type}`;
@@ -289,14 +339,13 @@ function showMessage(element, text, type = 'error') {
 }
 function hideMessage(element) { element.classList.add('hide'); }
 
-/* ====== Fetch autenticado compatível com seu GAS (key na query) ====== */
+/* ============ FETCH AUTENTICADO (Apps Script: key na query) ============ */
 async function authedGet(url, params = {}, extra = {}) {
   const u = new URL(url);
   Object.keys(params).forEach(k => {
     const v = params[k];
     if (v != null && v !== '') u.searchParams.append(k, v);
   });
-  // ✅ Apps Script original lê a senha como ?key=
   u.searchParams.append('key', TOKEN);
 
   const res = await fetch(u.toString(), { signal: extra.signal });
@@ -309,14 +358,13 @@ async function authedGet(url, params = {}, extra = {}) {
 
 function fmtDate(iso) { try { return new Date(iso).toLocaleString('pt-BR'); } catch(_) { return iso || ''; } }
 
-/* ====== Renderizações seguras ====== */
+/* ============ RENDER ============ */
 function renderStats(s) {
   totEl.textContent = s.totalInscricoes || 0;
   lastEl.textContent = new Date().toLocaleString('pt-BR');
   const cap = s.capacidade || [];
   esgotEl.textContent = cap.filter(c => (+c.restantes || 0) === 0).length;
 
-  // Combo de práticas
   fPratica.innerHTML = '';
   const optAll = document.createElement('option');
   optAll.value = ''; optAll.textContent = 'Todas';
@@ -329,7 +377,6 @@ function renderStats(s) {
     fPratica.appendChild(o);
   });
 
-  // Cards de capacidade
   capGrid.innerHTML = '';
   cap.forEach(c => {
     const restantes = +c.restantes || 0;
@@ -408,7 +455,7 @@ function renderRows(rows) {
   count.textContent = `${rows.length} registro(s) encontrado(s)`;
 }
 
-/* ====== Requisições (com cancelamento) ====== */
+/* ============ DATA LOAD (Abortable) ============ */
 async function loadStats() {
   if (statsController) statsController.abort();
   statsController = new AbortController();
@@ -426,11 +473,10 @@ async function loadList() {
   return authedGet(API, params, { signal: listController.signal });
 }
 
-/* ====== Exportações ====== */
+/* ============ EXPORTS ============ */
 function exportToPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-
   doc.setFontSize(16);
   doc.text('Práticas Integradoras 1 2025.2 - Inscrições', 14, 20);
   doc.setFontSize(10);
@@ -528,18 +574,26 @@ function exportToCSV() {
   const csv = [headers, ...rows].map(arr => arr.map(v => {
     const s = (v ?? '').toString().replace(/"/g, '""');
     return /[",\n;]/.test(s) ? `"${s}"` : s;
-  }).join(';')).join('\n');
+    }).join(';')).join('\n');
   const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
   const filename = `inscricoes_${new Date().toISOString().split('T')[0]}.csv`;
   saveAs(blob, filename);
   showMessage($('#fltMsg'), 'CSV exportado com sucesso!', 'success');
 }
 
-/* ====== Eventos ====== */
+/* ============ EVENTOS ============ */
+toggleApiBtn.addEventListener('click', () => {
+  apiEditor.classList.toggle('hide');
+});
+
 enterBtn.addEventListener('click', async () => {
-  API = (apiEl.value || '').trim();
+  // Se o editor estiver aberto e tiver valor, respeita o que está no input
+  if (!apiEditor.classList.contains('hide')) {
+    API = (apiEl.value || '').trim() || API;
+  }
   TOKEN = (pwdEl.value || '').trim();
-  if (!API || !TOKEN) { showMessage(loginMsg, 'Informe a URL da API e a senha.', 'error'); return; }
+  if (!API) { showMessage(loginMsg, 'API não resolvida. Configure manualmente.', 'error'); return; }
+  if (!TOKEN) { showMessage(loginMsg, 'Informe a senha.', 'error'); return; }
 
   enterBtn.disabled = true;
   enterBtn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin:0 8px 0 0;"></div>Validando...';
@@ -547,14 +601,21 @@ enterBtn.addEventListener('click', async () => {
 
   try {
     const stats = await loadStats();
+    // persiste API escolhida
     setSession(API, TOKEN);
-    loginCard.classList.add('hide'); dash.classList.remove('hide');
+    localStorage.setItem('pi_api', API);
+
+    loginCard.classList.add('hide'); 
+    dash.classList.remove('hide');
     renderStats(stats);
 
-    loading.classList.remove('hide'); tblWrap.classList.add('hide');
+    loading.classList.remove('hide'); 
+    tblWrap.classList.add('hide');
     const lst = await loadList();
     renderRows(lst.rows || []);
-    loading.classList.add('hide'); tblWrap.classList.remove('hide'); hideMessage(loginMsg);
+    loading.classList.add('hide'); 
+    tblWrap.classList.remove('hide'); 
+    hideMessage(loginMsg);
     showMessage(loginMsg, 'Login realizado com sucesso!', 'success');
   } catch(err) {
     showMessage(loginMsg, 'Falha no acesso: ' + err.message, 'error');
@@ -563,9 +624,6 @@ enterBtn.addEventListener('click', async () => {
     enterBtn.innerHTML = '<span>🔑</span>Entrar';
   }
 });
-
-/* Restaura sessão */
-if (restoreSession()) { apiEl.value = API; pwdEl.value = TOKEN; enterBtn.click(); }
 
 /* Filtros */
 btFiltrar.addEventListener('click', async () => {
@@ -614,18 +672,31 @@ btCSV.addEventListener('click', () => {
   finally { setTimeout(() => { btCSV.disabled = false; btCSV.innerHTML = '<span>📋</span>CSV'; }, 600); }
 });
 
-/* Enter key (keydown) */
+/* Teclas */
 pwdEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterBtn.click(); });
 fQ.addEventListener('keydown', (e) => { if (e.key === 'Enter') btFiltrar.click(); });
 
 /* Logout */
 btLogout?.addEventListener('click', () => {
   sessionStorage.removeItem('pi_api'); sessionStorage.removeItem('pi_token');
-  TOKEN = ''; API = '';
+  TOKEN = ''; 
   dash.classList.add('hide'); loginCard.classList.remove('hide');
   showMessage(loginMsg, 'Sessão encerrada.', 'success');
+  // mantém localStorage.pi_api para reuso futuro
+});
+
+/* Boot: resolve API, preenche UI e tenta restaurar sessão */
+document.addEventListener('DOMContentLoaded', async () => {
+  API = await resolveApi();
+  apiEl.value = API;
+  apiInfo.textContent = 'API detectada: ' + API;
+
+  if (restoreSession()) {
+    // Prioriza API detectada agora, não a da sessão antiga
+    API = API || sessionStorage.getItem('pi_api');
+    enterBtn.click(); // auto-login (só pede senha se não houver na sessão)
+  }
 });
 </script>
 </body>
 </html>
-
